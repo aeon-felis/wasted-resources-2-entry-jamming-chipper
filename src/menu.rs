@@ -1,96 +1,42 @@
-use crate::loading::FontAssets;
-use crate::GameState;
 use bevy::prelude::*;
+use bevy_egui_kbgp::bevy_egui::EguiContext;
+use bevy_egui_kbgp::egui;
+use bevy_egui_kbgp::prelude::*;
+
+use crate::global_types::{AppState, MenuState};
 
 pub struct MenuPlugin;
 
-/// This plugin is responsible for the game menu (containing only one button...)
-/// The menu is only drawn during the State `GameState::Menu` and is removed when that state is exited
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ButtonColors>()
-            .add_system_set(SystemSet::on_enter(GameState::Menu).with_system(setup_menu))
-            .add_system_set(SystemSet::on_update(GameState::Menu).with_system(click_play_button));
+         app.add_system_set(SystemSet::on_update(AppState::Menu(MenuState::Main)).with_system(main_menu));
     }
 }
 
-struct ButtonColors {
-    normal: UiColor,
-    hovered: UiColor,
-}
-
-impl Default for ButtonColors {
-    fn default() -> Self {
-        ButtonColors {
-            normal: Color::rgb(0.15, 0.15, 0.15).into(),
-            hovered: Color::rgb(0.25, 0.25, 0.25).into(),
-        }
-    }
-}
-
-#[derive(Component)]
-struct PlayButton;
-
-fn setup_menu(
-    mut commands: Commands,
-    font_assets: Res<FontAssets>,
-    button_colors: Res<ButtonColors>,
-) {
-    commands.spawn_bundle(UiCameraBundle::default());
-    commands
-        .spawn_bundle(ButtonBundle {
-            style: Style {
-                size: Size::new(Val::Px(120.0), Val::Px(50.0)),
-                margin: Rect::all(Val::Auto),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..Default::default()
-            },
-            color: button_colors.normal,
-            ..Default::default()
-        })
-        .insert(PlayButton)
-        .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text {
-                    sections: vec![TextSection {
-                        value: "Play".to_string(),
-                        style: TextStyle {
-                            font: font_assets.fira_sans.clone(),
-                            font_size: 40.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
-                        },
-                    }],
-                    alignment: Default::default(),
-                },
-                ..Default::default()
+fn menu_layout(egui_context: &egui::Context, dlg: impl FnOnce(&mut egui::Ui)) {
+    egui::CentralPanel::default()
+        .frame(egui::Frame::none())
+        .show(egui_context, |ui| {
+            let layout = egui::Layout::top_down(egui::Align::Center);
+            ui.with_layout(layout, |ui| {
+                dlg(ui);
             });
         });
 }
 
-type ButtonInteraction<'a> = (Entity, &'a Interaction, &'a mut UiColor, &'a Children);
 
-fn click_play_button(
-    mut commands: Commands,
-    button_colors: Res<ButtonColors>,
-    mut state: ResMut<State<GameState>>,
-    mut interaction_query: Query<ButtonInteraction, (Changed<Interaction>, With<Button>)>,
-    text_query: Query<Entity, With<Text>>,
+fn main_menu(
+    mut egui_context: ResMut<EguiContext>,
+    mut state: ResMut<State<AppState>>,
+    #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<bevy::app::AppExit>,
 ) {
-    for (button, interaction, mut color, children) in interaction_query.iter_mut() {
-        let text = text_query.get(children[0]).unwrap();
-        match *interaction {
-            Interaction::Clicked => {
-                commands.entity(button).despawn();
-                commands.entity(text).despawn();
-                state.set(GameState::Playing).unwrap();
-            }
-            Interaction::Hovered => {
-                *color = button_colors.hovered;
-            }
-            Interaction::None => {
-                *color = button_colors.normal;
-            }
+    menu_layout(egui_context.ctx_mut(), |ui| {
+        if ui.button("Start").kbgp_navigation().kbgp_initial_focus().clicked() {
+            state.set(AppState::Game).unwrap();
         }
-    }
+        #[cfg(not(target_arch = "wasm32"))]
+        if ui.button("Exit").kbgp_navigation().clicked() {
+            exit.send(bevy::app::AppExit);
+        }
+    });
 }

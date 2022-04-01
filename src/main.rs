@@ -3,19 +3,33 @@
 
 use bevy::prelude::{App, ClearColor, Color, Msaa, WindowDescriptor};
 use bevy::DefaultPlugins;
-use bevy_game::GamePlugin;
+use bevy_egui_kbgp::{KbgpPlugin, KbgpSettings, KbgpNavBindings};
+use jamming_chipper::GamePlugin;
+use bevy_rapier2d::physics::{NoUserData, RapierPhysicsPlugin};
 
 fn main() {
-    App::new()
-        .insert_resource(Msaa { samples: 1 })
-        .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
-        .insert_resource(WindowDescriptor {
-            width: 800.,
-            height: 600.,
-            title: "Bevy game".to_string(), // ToDo
-            ..Default::default()
-        })
-        .add_plugins(DefaultPlugins)
-        .add_plugin(GamePlugin)
-        .run();
+    let mut app = App::new();
+    app.insert_resource(Msaa { samples: 1 });
+    app.insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)));
+    app.insert_resource(WindowDescriptor {
+        width: 800.,
+        height: 600.,
+        title: "Jamming Chipper".to_string(),
+        ..Default::default()
+    });
+    app.add_plugins(DefaultPlugins);
+    app.add_plugin(GamePlugin);
+    app.add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
+    app.add_plugin(bevy_egui_kbgp::bevy_egui::EguiPlugin);
+    app.insert_resource(bevy_egui_kbgp::bevy_egui::EguiSettings { scale_factor: 2.0 });
+    app.add_plugin(KbgpPlugin);
+    app.insert_resource(KbgpSettings {
+        allow_keyboard: true,
+        allow_mouse_buttons: true,
+        allow_mouse_wheel: true,
+        allow_mouse_wheel_sideways: true,
+        allow_gamepads: true,
+        bindings: KbgpNavBindings::default().with_wasd_navigation(),
+    });
+    app.run();
 }
