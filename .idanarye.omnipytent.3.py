@@ -41,3 +41,8 @@ def launch_wasm(ctx):
     ].with_env(
         RUST_BACKTRACE='1',
     ) & TERMINAL_PANEL.size(20)
+
+
+@task
+def browse_wasm(ctx):
+    local['chrome']['http://127.0.0.1:1334']()
