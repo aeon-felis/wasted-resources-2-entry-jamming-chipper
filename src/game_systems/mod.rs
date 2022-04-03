@@ -1,6 +1,7 @@
 mod arena;
 mod camera;
 mod player;
+mod input;
 
 use bevy::prelude::*;
 
@@ -17,6 +18,7 @@ fn create_move_to_state_system(new_state: AppState) -> impl Fn(ResMut<State<AppS
 impl Plugin for GameSystemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(camera::CameraPlugin);
+        app.add_plugin(input::InputPlugin);
         app.add_plugin(arena::ArenaPlugin);
         app.add_plugin(player::PlayerPlugin);
         app.add_system_set({
