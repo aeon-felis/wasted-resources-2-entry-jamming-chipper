@@ -3,9 +3,9 @@
 
 use bevy::prelude::{App, ClearColor, Color, Msaa, WindowDescriptor};
 use bevy::DefaultPlugins;
-use bevy_egui_kbgp::{KbgpPlugin, KbgpSettings, KbgpNavBindings};
-use jamming_chipper::GamePlugin;
+use bevy_egui_kbgp::{KbgpNavBindings, KbgpPlugin, KbgpSettings};
 use bevy_rapier2d::physics::{NoUserData, RapierPhysicsPlugin};
+use jamming_chipper::GamePlugin;
 
 fn main() {
     let mut app = App::new();

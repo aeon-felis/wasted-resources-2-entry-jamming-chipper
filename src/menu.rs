@@ -9,7 +9,9 @@ pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-         app.add_system_set(SystemSet::on_update(AppState::Menu(MenuState::Main)).with_system(main_menu));
+        app.add_system_set(
+            SystemSet::on_update(AppState::Menu(MenuState::Main)).with_system(main_menu),
+        );
     }
 }
 
@@ -24,15 +26,19 @@ fn menu_layout(egui_context: &egui::Context, dlg: impl FnOnce(&mut egui::Ui)) {
         });
 }
 
-
 fn main_menu(
     mut egui_context: ResMut<EguiContext>,
     mut state: ResMut<State<AppState>>,
     #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<bevy::app::AppExit>,
 ) {
     menu_layout(egui_context.ctx_mut(), |ui| {
-        if ui.button("Start").kbgp_navigation().kbgp_initial_focus().clicked() {
-            state.set(AppState::Game).unwrap();
+        if ui
+            .button("Start")
+            .kbgp_navigation()
+            .kbgp_initial_focus()
+            .clicked()
+        {
+            state.set(AppState::ClearLevelAndThenLoad).unwrap();
         }
         #[cfg(not(target_arch = "wasm32"))]
         if ui.button("Exit").kbgp_navigation().clicked() {

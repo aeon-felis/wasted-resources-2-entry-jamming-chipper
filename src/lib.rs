@@ -1,12 +1,14 @@
+mod game_systems;
+pub mod global_types;
 mod loading;
 mod menu;
-pub mod global_types;
 
 use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 
+use self::game_systems::GameSystemsPlugin;
 use self::global_types::{AppState, MenuState};
 use self::loading::LoadingPlugin;
 use self::menu::MenuPlugin;
@@ -18,6 +20,7 @@ impl Plugin for GamePlugin {
         app.add_state(AppState::Menu(MenuState::Main));
         app.add_plugin(LoadingPlugin);
         app.add_plugin(MenuPlugin);
+        app.add_plugin(GameSystemsPlugin);
 
         #[cfg(debug_assertions)]
         {
