@@ -1,5 +1,6 @@
 mod arena;
 mod camera;
+mod player;
 
 use bevy::prelude::*;
 
@@ -17,6 +18,7 @@ impl Plugin for GameSystemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(camera::CameraPlugin);
         app.add_plugin(arena::ArenaPlugin);
+        app.add_plugin(player::PlayerPlugin);
         app.add_system_set({
             SystemSet::on_enter(AppState::ClearLevelAndThenLoad)
                 .with_system(clear_and_load)
