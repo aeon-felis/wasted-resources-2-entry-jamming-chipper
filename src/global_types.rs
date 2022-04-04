@@ -27,4 +27,10 @@ pub enum InputBinding {
 }
 
 #[derive(Component)]
-pub struct PlayerControlled;
+pub struct PlayerControl {
+    pub max_speed: f32,
+    pub impulse_coefficient: f32,
+    pub jump_power_coefficient: f32,
+    pub jump_time_coefficient: f32,
+    pub jump_potential: f32,
+}

@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use ezinput::prelude::*;
 
-use crate::global_types::{AppState, DespawnWithLevel, InputBinding, PlayerControlled};
+use crate::global_types::{AppState, DespawnWithLevel, InputBinding, PlayerControl};
 
 pub struct PlayerPlugin;
 
@@ -66,34 +66,25 @@ fn setup_player(
         transform: Transform::from_xyz(0.0, 2.0, 0.0),
         ..Default::default()
     });
-    cmd.insert(PlayerControlled);
-    cmd.insert(JumpingPower {
-        power_coefficient: 30.0,
-        time_coefficient: 7.5,
-        current: 0.0,
+    cmd.insert(PlayerControl {
+        max_speed: 20.0,
+        impulse_coefficient: 1000.0,
+        jump_power_coefficient: 30.0,
+        jump_time_coefficient: 7.5,
+        jump_potential: 0.0,
     });
     cmd.insert(DespawnWithLevel);
-}
-
-#[derive(Component)]
-struct JumpingPower {
-    power_coefficient: f32,
-    time_coefficient: f32,
-    current: f32,
 }
 
 fn player_control(
     time: Res<Time>,
     input_views: Query<&InputView<InputBinding>>,
-    mut query: Query<
-        (
-            Entity,
-            &mut RigidBodyVelocityComponent,
-            &RigidBodyMassPropsComponent,
-            &mut JumpingPower,
-        ),
-        With<PlayerControlled>,
-    >,
+    mut query: Query<(
+        Entity,
+        &mut RigidBodyVelocityComponent,
+        &RigidBodyMassPropsComponent,
+        &mut PlayerControl,
+    )>,
     narrow_phase: Res<NarrowPhase>,
 ) {
     let mut movement_value = 0.0;
@@ -119,7 +110,7 @@ fn player_control(
         0.0
     };
     let target_speed = movement_value;
-    for (player_entity, mut velocity, mass_props, mut juming_power) in query.iter_mut() {
+    for (player_entity, mut velocity, mass_props, mut player_control) in query.iter_mut() {
         let standing_on = narrow_phase
             .contacts_with(player_entity.handle())
             .filter(|contact| contact.has_any_active_contact)
@@ -138,20 +129,20 @@ fn player_control(
             .max_by_key(|normal| float_ord::FloatOrd(normal.dot(&vector![0.0, 1.0])));
         if let Some(standing_on) = standing_on {
             let refill_percentage = standing_on.dot(&vector![0.0, 1.0]);
-            if juming_power.current < refill_percentage {
-                juming_power.current = refill_percentage;
+            if player_control.jump_potential < refill_percentage {
+                player_control.jump_potential = refill_percentage;
             }
         } else if !is_jumping {
-            juming_power.current = 0.0;
+            player_control.jump_potential = 0.0;
         }
         if is_jumping {
-            let to_deplete = juming_power
-                .current
-                .min(time.delta().as_secs_f32() * juming_power.time_coefficient);
+            let to_deplete = player_control
+                .jump_potential
+                .min(time.delta().as_secs_f32() * player_control.jump_time_coefficient);
             if 0.0 < to_deplete {
-                let before_depletion = juming_power.current;
+                let before_depletion = player_control.jump_potential;
                 let after_depletion = before_depletion - to_deplete;
-                juming_power.current = after_depletion;
+                player_control.jump_potential = after_depletion;
                 let integrate = |x: f32| {
                     let degree = 0.75;
                     x.powf(degree) / degree
@@ -160,12 +151,12 @@ fn player_control(
                     (integrate(before_depletion) - integrate(after_depletion)) / integrate(1.0);
                 velocity.apply_impulse(
                     mass_props,
-                    vector![0.0, 1.0] * juming_power.power_coefficient * area_under_graph,
+                    vector![0.0, 1.0] * player_control.jump_power_coefficient * area_under_graph,
                 );
             }
         }
 
-        let current_speed = velocity.linvel.dot(&vector![1.0, 0.0]) / 20.0;
+        let current_speed = velocity.linvel.dot(&vector![1.0, 0.0]) / player_control.max_speed;
         if 0.0 < target_speed && target_speed <= current_speed {
             continue;
         } else if target_speed < 0.0 && current_speed <= target_speed {
@@ -179,7 +170,10 @@ fn player_control(
         };
         velocity.apply_impulse(
             mass_props,
-            vector![1.0, 0.0] * time.delta().as_secs_f32() * 1000.0 * impulse,
+            vector![1.0, 0.0]
+                * time.delta().as_secs_f32()
+                * player_control.impulse_coefficient
+                * impulse,
         );
     }
 }
