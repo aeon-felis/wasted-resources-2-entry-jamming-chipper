@@ -85,17 +85,18 @@ fn pause_menu(
     #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<bevy::app::AppExit>,
 ) {
     menu_layout(egui_context.ctx_mut(), |ui| {
-        if unpause_reader.iter().any(|_| true) {
-            state.set(AppState::Game).unwrap();
-            return;
-        }
         if ui
             .button("Resume")
             .kbgp_navigation()
             .kbgp_initial_focus()
             .clicked()
+            || unpause_reader.iter().any(|_| true)
         {
             state.set(AppState::Game).unwrap();
+        }
+        if ui.button("Main Menu").kbgp_navigation().clicked() {
+            state.set(AppState::Menu(MenuState::Main)).unwrap();
+            ui.kbgp_clear_input();
         }
         #[cfg(not(target_arch = "wasm32"))]
         if ui.button("Exit").kbgp_navigation().clicked() {
