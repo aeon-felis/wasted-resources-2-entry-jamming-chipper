@@ -31,6 +31,24 @@ fn setup_arena(
     cmd.insert_bundle(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Box::new(10.0, 1.0, 2.0))),
         material: meterials.add(Color::BEIGE.into()),
+        ..Default::default()
+    })
+    .insert(DespawnWithLevel);
+
+    let mut cmd = commands.spawn();
+    cmd.insert_bundle(RigidBodyBundle {
+        body_type: RigidBodyType::Static.into(),
+        position: Isometry::new(vector![10.0, 0.0], 0.5).into(),
+        ..Default::default()
+    });
+    cmd.insert(RigidBodyPositionSync::Discrete);
+    cmd.insert_bundle(ColliderBundle {
+        shape: ColliderShape::cuboid(5.0, 0.5).into(),
+        ..Default::default()
+    });
+    cmd.insert_bundle(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Box::new(10.0, 1.0, 2.0))),
+        material: meterials.add(Color::RED.into()),
         transform: Transform::from_xyz(0.0, -0.5, 0.0),
         ..Default::default()
     })
