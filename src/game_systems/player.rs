@@ -172,7 +172,11 @@ fn player_control(
             continue;
         }
         let impulse = target_speed - current_speed;
-        let impulse = impulse.signum() * impulse.powi(4);
+        let impulse = if 1.0 < impulse.abs() {
+            impulse.signum()
+        } else {
+            impulse.signum() * impulse.powi(4)
+        };
         velocity.apply_impulse(
             mass_props,
             vector![1.0, 0.0] * time.delta().as_secs_f32() * 1000.0 * impulse,
