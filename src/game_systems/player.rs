@@ -67,7 +67,19 @@ fn setup_player(
         ..Default::default()
     });
     cmd.insert(PlayerControlled);
+    cmd.insert(JumpingPower {
+        full_power: 30.0,
+        full_jump_duration: 0.1,
+        current: 0.0,
+    });
     cmd.insert(DespawnWithLevel);
+}
+
+#[derive(Component)]
+struct JumpingPower {
+    full_power: f32,
+    full_jump_duration: f32,
+    current: f32,
 }
 
 fn player_control(
@@ -75,20 +87,27 @@ fn player_control(
     input_views: Query<&InputView<InputBinding>>,
     mut query: Query<
         (
+            Entity,
             &mut RigidBodyVelocityComponent,
             &RigidBodyMassPropsComponent,
+            &mut JumpingPower,
         ),
         With<PlayerControlled>,
     >,
+    narrow_phase: Res<NarrowPhase>,
 ) {
     let mut movement_value = 0.0;
     let mut num_participating = 0;
+    let mut is_jumping = false;
     for input_view in input_views.iter() {
         for axis_value in input_view.axis(&InputBinding::MoveHorizontal) {
             if !axis_value.1.released() {
                 num_participating += 1;
                 movement_value = axis_value.0
             }
+        }
+        if matches!(input_view.key(&InputBinding::Jump), PressState::Pressed { .. }) {
+            is_jumping = true;
         }
     }
     let movement_value = if 0 < num_participating {
@@ -97,7 +116,41 @@ fn player_control(
         0.0
     };
     let target_speed = movement_value;
-    for (mut velocity, mass_props) in query.iter_mut() {
+    for (player_entity, mut velocity, mass_props, mut juming_power) in query.iter_mut() {
+        let standing_on = narrow_phase.contacts_with(player_entity.handle())
+            .filter(|contact| contact.has_any_active_contact)
+            .flat_map(|contact| {
+                contact.manifolds.iter().filter_map(|contact_manifold| {
+                    let player_handle = player_entity.handle();
+                    if contact_manifold.data.rigid_body1 == Some(player_handle) {
+                        Some(-contact_manifold.data.normal)
+                    } else if contact_manifold.data.rigid_body2 == Some(player_handle) {
+                        Some(contact_manifold.data.normal)
+                    } else {
+                        None
+                    }
+                })
+            })
+            .max_by_key(|normal| float_ord::FloatOrd(normal.dot(&vector![0.0, 1.0])));
+        if let Some(standing_on) = standing_on {
+            let refill_percentage = standing_on.dot(&vector![0.0, 1.0]);
+            if juming_power.current < refill_percentage {
+                juming_power.current = refill_percentage;
+            }
+        } else if !is_jumping {
+            juming_power.current = 0.0;
+        }
+        if is_jumping {
+            let to_deplete = juming_power.current.min(time.delta().as_secs_f32() / juming_power.full_jump_duration);
+            if 0.0 < to_deplete {
+                juming_power.current -= to_deplete;
+                velocity.apply_impulse(
+                    mass_props,
+                    vector![0.0, 1.0] * juming_power.full_power * to_deplete,
+                );
+            }
+        }
+
         let current_speed = velocity.linvel.dot(&vector![1.0, 0.0]) / 20.0;
         if 0.0 < target_speed && target_speed <= current_speed {
             continue;

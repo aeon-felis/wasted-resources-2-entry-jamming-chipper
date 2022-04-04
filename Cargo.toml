@@ -38,6 +38,7 @@ bevy_rapier2d = "0.12.1"
 bevy-egui-kbgp = "0.2.0"
 ezinput = "0.2.3"
 ezinput_macros = "0.2.0"
+float-ord = "0.3.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 winit = { version = "0.25", features=["x11"]}
