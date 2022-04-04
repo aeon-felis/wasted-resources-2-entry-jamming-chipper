@@ -156,7 +156,8 @@ fn player_control(
                     let degree = 0.75;
                     x.powf(degree) / degree
                 };
-                let area_under_graph = (integrate(before_depletion) - integrate(after_depletion)) / integrate(1.0);
+                let area_under_graph =
+                    (integrate(before_depletion) - integrate(after_depletion)) / integrate(1.0);
                 velocity.apply_impulse(
                     mass_props,
                     vector![0.0, 1.0] * juming_power.power_coefficient * area_under_graph,
