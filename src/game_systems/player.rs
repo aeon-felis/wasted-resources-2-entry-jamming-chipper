@@ -106,7 +106,10 @@ fn player_control(
                 movement_value = axis_value.0
             }
         }
-        if matches!(input_view.key(&InputBinding::Jump), PressState::Pressed { .. }) {
+        if matches!(
+            input_view.key(&InputBinding::Jump),
+            PressState::Pressed { .. }
+        ) {
             is_jumping = true;
         }
     }
@@ -117,7 +120,8 @@ fn player_control(
     };
     let target_speed = movement_value;
     for (player_entity, mut velocity, mass_props, mut juming_power) in query.iter_mut() {
-        let standing_on = narrow_phase.contacts_with(player_entity.handle())
+        let standing_on = narrow_phase
+            .contacts_with(player_entity.handle())
             .filter(|contact| contact.has_any_active_contact)
             .flat_map(|contact| {
                 contact.manifolds.iter().filter_map(|contact_manifold| {
@@ -141,7 +145,9 @@ fn player_control(
             juming_power.current = 0.0;
         }
         if is_jumping {
-            let to_deplete = juming_power.current.min(time.delta().as_secs_f32() / juming_power.full_jump_duration);
+            let to_deplete = juming_power
+                .current
+                .min(time.delta().as_secs_f32() / juming_power.full_jump_duration);
             if 0.0 < to_deplete {
                 juming_power.current -= to_deplete;
                 velocity.apply_impulse(
