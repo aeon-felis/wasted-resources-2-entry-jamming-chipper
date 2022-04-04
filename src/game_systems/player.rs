@@ -68,8 +68,8 @@ fn setup_player(
     });
     cmd.insert(PlayerControlled);
     cmd.insert(JumpingPower {
-        full_power: 30.0,
-        full_jump_duration: 0.1,
+        power_coefficient: 30.0,
+        time_coefficient: 7.5,
         current: 0.0,
     });
     cmd.insert(DespawnWithLevel);
@@ -77,8 +77,8 @@ fn setup_player(
 
 #[derive(Component)]
 struct JumpingPower {
-    full_power: f32,
-    full_jump_duration: f32,
+    power_coefficient: f32,
+    time_coefficient: f32,
     current: f32,
 }
 
@@ -147,12 +147,19 @@ fn player_control(
         if is_jumping {
             let to_deplete = juming_power
                 .current
-                .min(time.delta().as_secs_f32() / juming_power.full_jump_duration);
+                .min(time.delta().as_secs_f32() * juming_power.time_coefficient);
             if 0.0 < to_deplete {
-                juming_power.current -= to_deplete;
+                let before_depletion = juming_power.current;
+                let after_depletion = before_depletion - to_deplete;
+                juming_power.current = after_depletion;
+                let integrate = |x: f32| {
+                    let degree = 0.75;
+                    x.powf(degree) / degree
+                };
+                let area_under_graph = (integrate(before_depletion) - integrate(after_depletion)) / integrate(1.0);
                 velocity.apply_impulse(
                     mass_props,
-                    vector![0.0, 1.0] * juming_power.full_power * to_deplete,
+                    vector![0.0, 1.0] * juming_power.power_coefficient * area_under_graph,
                 );
             }
         }
