@@ -13,6 +13,7 @@ pub enum AppState {
 #[derive(Clone, Hash, Debug, PartialEq, Eq)]
 pub enum MenuState {
     Main,
+    Pause,
 }
 
 #[derive(Component)]

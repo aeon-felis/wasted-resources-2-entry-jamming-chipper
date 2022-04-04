@@ -10,10 +10,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(SystemSet::on_enter(AppState::LoadLevel).with_system(setup_player));
-        app.add_system_set({
-            SystemSet::on_update(AppState::Game)
-                .with_system(player_control)
-        });
+        app.add_system_set({ SystemSet::on_update(AppState::Game).with_system(player_control) });
     }
 }
 
@@ -33,12 +30,14 @@ fn setup_player(
                 inv_principal_inertia_sqrt: 0.0,
             },
             ..Default::default()
-        }.into(),
+        }
+        .into(),
         position: point![0.0, 2.0].into(),
         damping: RigidBodyDamping {
             linear_damping: 1.0,
             angular_damping: 0.0,
-        }.into(),
+        }
+        .into(),
         ..Default::default()
     });
     cmd.insert(RigidBodyPositionSync::Discrete);
