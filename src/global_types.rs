@@ -34,3 +34,9 @@ pub struct PlayerControl {
     pub jump_time_coefficient: f32,
     pub jump_potential: f32,
 }
+
+#[derive(Component)]
+pub enum PlayerLeg {
+    Right,
+    Left,
+}

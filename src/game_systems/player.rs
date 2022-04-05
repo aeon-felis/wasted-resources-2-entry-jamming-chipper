@@ -1,9 +1,10 @@
-use bevy::prelude::shape;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use ezinput::prelude::*;
 
-use crate::global_types::{AppState, DespawnWithLevel, InputBinding, PlayerControl};
+use crate::global_types::{AppState, DespawnWithLevel, InputBinding, PlayerControl, PlayerLeg};
+use crate::gltf_spawner::SpawnGltfNode;
+use crate::loading::ModelAssets;
 
 pub struct PlayerPlugin;
 
@@ -16,8 +17,9 @@ impl Plugin for PlayerPlugin {
 
 fn setup_player(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut meterials: ResMut<Assets<StandardMaterial>>,
+    model_assets: Res<ModelAssets>,
+    // mut meshes: ResMut<Assets<Mesh>>,
+    // mut meterials: ResMut<Assets<StandardMaterial>>,
 ) {
     let mut cmd = commands.spawn();
     cmd.insert_bundle(RigidBodyBundle {
@@ -53,18 +55,35 @@ fn setup_player(
         .into(),
         ..Default::default()
     });
-    cmd.insert_bundle(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Capsule {
-            radius: 0.5,
-            rings: 10,
-            depth: 1.0,
-            latitudes: 10,
-            longitudes: 10,
-            uv_profile: shape::CapsuleUvProfile::Uniform,
-        })),
-        material: meterials.add(Color::RED.into()),
-        transform: Transform::from_xyz(0.0, 2.0, 0.0),
-        ..Default::default()
+    // cmd.insert_bundle(PbrBundle {
+    // //mesh: meshes.add(Mesh::from(shape::Capsule {
+    // //radius: 0.5,
+    // //rings: 10,
+    // //depth: 1.0,
+    // //latitudes: 10,
+    // //longitudes: 10,
+    // //uv_profile: shape::CapsuleUvProfile::Uniform,
+    // //})),
+    // //material: meterials.add(Color::RED.into()),
+    // transform: Transform::from_xyz(0.0, 2.0, 0.0),
+    // ..Default::default()
+    // });
+    cmd.insert(Transform::from_xyz(0.0, 2.0, 0.0));
+    cmd.insert(GlobalTransform::identity());
+    cmd.insert(SpawnGltfNode(model_assets.player.clone(), "Body"));
+    cmd.with_children(|commands| {
+        commands
+            .spawn()
+            .insert(Transform::identity())
+            .insert(GlobalTransform::identity())
+            .insert(SpawnGltfNode(model_assets.player.clone(), "RightLeg"))
+            .insert(PlayerLeg::Right);
+        commands
+            .spawn()
+            .insert(Transform::identity())
+            .insert(GlobalTransform::identity())
+            .insert(SpawnGltfNode(model_assets.player.clone(), "LeftLeg"))
+            .insert(PlayerLeg::Left);
     });
     cmd.insert(PlayerControl {
         max_speed: 20.0,
