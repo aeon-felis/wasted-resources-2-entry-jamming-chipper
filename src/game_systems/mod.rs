@@ -53,7 +53,7 @@ pub fn run_on_state_change(
         return ShouldRun::No;
     }
     *prev_state = Some(state.clone());
-    return ShouldRun::Yes;
+    ShouldRun::Yes
 }
 
 fn enable_disable_physics(

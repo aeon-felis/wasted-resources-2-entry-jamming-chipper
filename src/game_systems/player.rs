@@ -157,9 +157,9 @@ fn player_control(
         }
 
         let current_speed = velocity.linvel.dot(&vector![1.0, 0.0]) / player_control.max_speed;
-        if 0.0 < target_speed && target_speed <= current_speed {
-            continue;
-        } else if target_speed < 0.0 && current_speed <= target_speed {
+        if (0.0 < target_speed && target_speed <= current_speed)
+            || (target_speed < 0.0 && current_speed <= target_speed)
+        {
             continue;
         }
         let impulse = target_speed - current_speed;
