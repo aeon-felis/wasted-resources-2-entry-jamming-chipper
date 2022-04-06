@@ -1,17 +1,27 @@
 use bevy::ecs::system::{EntityCommands, SystemParam};
 use bevy::gltf::{Gltf, GltfMesh, GltfNode};
 use bevy::prelude::*;
+use bevy::render::mesh::{Indices, VertexAttributeValues};
+use bevy_rapier2d::prelude::*;
 
 pub struct GltfSpawnerPlugin;
 
 impl Plugin for GltfSpawnerPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(spawn_gltf_nodes);
+        app.add_system(spawn_colliders);
     }
 }
 
 #[derive(Component)]
 pub struct SpawnGltfNode(pub Handle<Gltf>, pub &'static str);
+
+#[derive(Component)]
+pub struct SpawnCollider {
+    pub gltf: Handle<Gltf>,
+    pub node_name: &'static str,
+    pub material: ColliderMaterial,
+}
 
 fn spawn_gltf_nodes(
     mut commands: Commands,
@@ -29,7 +39,7 @@ fn spawn_gltf_nodes(
         let gltf_node = spawner.gltf_nodes.get(gltf_node).unwrap();
         let mut cmd = commands.entity(entity);
         cmd.remove::<SpawnGltfNode>();
-        spawner.spawn_node_recursive(&gltf_node, &mut cmd);
+        spawner.spawn_node_recursive(gltf_node, &mut cmd);
     }
 }
 
@@ -65,5 +75,87 @@ impl<'w, 's> Spawner<'w, 's> {
                 }
             });
         }
+    }
+}
+
+fn spawn_colliders(
+    mut commands: Commands,
+    query: Query<(Entity, &SpawnCollider)>,
+    gltfs: Res<Assets<Gltf>>,
+    gltf_nodes: Res<Assets<GltfNode>>,
+    gltf_meshes: Res<Assets<GltfMesh>>,
+    meshes: Res<Assets<Mesh>>,
+) {
+    for (
+        entity,
+        SpawnCollider {
+            gltf,
+            node_name,
+            material,
+        },
+    ) in query.iter()
+    {
+        let gltf = if let Some(gltf) = gltfs.get(gltf) {
+            gltf
+        } else {
+            continue;
+        };
+        let gltf_node = &gltf.named_nodes[*node_name];
+        let gltf_node = gltf_nodes.get(gltf_node).unwrap();
+        assert!(
+            gltf_node.children.is_empty(),
+            "Collider node {:?} must not have children",
+            node_name
+        );
+        let mut cmd = commands.entity(entity);
+        cmd.remove::<SpawnCollider>();
+        let mesh = gltf_node
+            .mesh
+            .as_ref()
+            .expect("Collider node must have a mesh");
+        let mesh = gltf_meshes.get(mesh).unwrap();
+        let mut it = mesh.primitives.iter();
+        let primitive = it.next().expect("Collider node has no primitives");
+        assert!(
+            it.next().is_none(),
+            "Collider node has more than on primitive"
+        );
+        assert!(
+            primitive.material.is_none(),
+            "Collider node {:?} must not have materials",
+            node_name
+        );
+        let mesh = meshes.get(&primitive.mesh).unwrap();
+        let tri_mesh = TriMesh::new(
+            {
+                if let VertexAttributeValues::Float32x3(vertices) =
+                    mesh.attribute(Mesh::ATTRIBUTE_POSITION).unwrap()
+                {
+                    vertices.iter().map(|&[x, y, _]| point![x, y]).collect()
+                } else {
+                    panic!("Not Float32x3")
+                }
+            },
+            {
+                let mut triangles = Vec::new();
+                match mesh.indices().unwrap() {
+                    Indices::U16(_indices) => {}
+                    Indices::U32(indices) => {
+                        for i in 0..indices.len() {
+                            if i % 3 == 0 {
+                                triangles.push([indices[i], indices[i + 1], indices[i + 2]]);
+                            }
+                        }
+                    }
+                }
+                triangles
+            },
+        );
+        cmd.insert_bundle(ColliderBundle {
+            shape: SharedShape::new(tri_mesh).into(),
+            material: (*material).into(),
+            mass_properties: ColliderMassProps::Density(0.0).into(),
+            ..Default::default()
+        });
     }
 }

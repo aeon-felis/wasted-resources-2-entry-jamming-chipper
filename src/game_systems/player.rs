@@ -3,7 +3,7 @@ use bevy_rapier2d::prelude::*;
 use ezinput::prelude::*;
 
 use crate::global_types::{AppState, DespawnWithLevel, InputBinding, PlayerControl, PlayerLeg};
-use crate::gltf_spawner::SpawnGltfNode;
+use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
 
 pub struct PlayerPlugin;
@@ -28,7 +28,7 @@ fn setup_player(
             flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
             local_mprops: MassProperties {
                 local_com: point![0.0, 0.0],
-                inv_mass: 1.0,
+                inv_mass: 1.0 / 3.0,
                 inv_principal_inertia_sqrt: 0.0,
             },
             ..Default::default()
@@ -43,18 +43,29 @@ fn setup_player(
         ..Default::default()
     });
     cmd.insert(RigidBodyPositionSync::Discrete);
-    cmd.insert_bundle(ColliderBundle {
-        shape: ColliderShape::capsule(point![0.0, -0.5], point![0.0, 0.5], 0.5).into(),
+    cmd.insert(SpawnCollider {
+        gltf: model_assets.player.clone(),
+        node_name: "Collider",
         material: ColliderMaterial {
             friction: 2.0,
             // restitution: todo!(),
             // friction_combine_rule: todo!(),
             // restitution_combine_rule: todo!(),
             ..Default::default()
-        }
-        .into(),
-        ..Default::default()
+        },
     });
+    //cmd.insert_bundle(ColliderBundle {
+    //shape: ColliderShape::capsule(point![0.0, -0.5], point![0.0, 0.5], 0.5).into(),
+    //material: ColliderMaterial {
+    //friction: 2.0,
+    //// restitution: todo!(),
+    //// friction_combine_rule: todo!(),
+    //// restitution_combine_rule: todo!(),
+    //..Default::default()
+    //}
+    //.into(),
+    //..Default::default()
+    //});
     // cmd.insert_bundle(PbrBundle {
     // //mesh: meshes.add(Mesh::from(shape::Capsule {
     // //radius: 0.5,
