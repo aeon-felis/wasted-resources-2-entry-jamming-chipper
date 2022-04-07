@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rapier2d::na::Vector2;
 use ezinput::prelude::BindingTypeView;
 use ezinput_macros::BindingTypeView;
 
@@ -33,4 +34,9 @@ pub struct PlayerControl {
     pub jump_power_coefficient: f32,
     pub jump_time_coefficient: f32,
     pub jump_potential: f32,
+    pub last_stood_on: Vector2<f32>,
+    pub stood_on_potential: f32,
+    pub stood_on_time_coefficient: f32,
+    pub uphill_move_efficiency: f32,
+    pub uphill_stop_efficiency: f32,
 }

@@ -131,6 +131,11 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
         jump_power_coefficient: 30.0,
         jump_time_coefficient: 7.5,
         jump_potential: 0.0,
+        last_stood_on: vector![0.0, 1.0],
+        stood_on_potential: 0.0,
+        stood_on_time_coefficient: 10.0,
+        uphill_move_efficiency: 0.5,
+        uphill_stop_efficiency: 1.0,
     });
     cmd.insert(PlayerStatusForAnimation {
         is_moving: false,
@@ -213,8 +218,17 @@ fn player_control(
             if player_control.jump_potential < refill_percentage {
                 player_control.jump_potential = refill_percentage;
             }
-        } else if !is_jumping {
-            player_control.jump_potential = 0.0;
+
+            player_control.last_stood_on = standing_on;
+            player_control.stood_on_potential = 1.0;
+        } else {
+            if !is_jumping {
+                player_control.jump_potential = 0.0;
+            }
+
+            player_control.stood_on_potential = (player_control.stood_on_potential
+                - time.delta().as_secs_f32() * player_control.stood_on_time_coefficient)
+                .max(0.0);
         }
         if is_jumping {
             let to_deplete = player_control
@@ -237,11 +251,18 @@ fn player_control(
             }
         }
 
-        let current_speed = velocity.linvel.dot(&vector![1.0, 0.0]) / player_control.max_speed;
+        let mut up_now = vector![0.0, 1.0];
+        up_now = (1.0 - player_control.stood_on_potential) * up_now
+            + player_control.stood_on_potential * player_control.last_stood_on;
+
+        let movement_vector = Isometry::rotation(-std::f32::consts::FRAC_PI_2) * up_now;
+
+        let current_speed = velocity.linvel.dot(&movement_vector) / player_control.max_speed;
         player_status_for_animation.is_moving = 0.01 <= target_speed.abs();
         if player_status_for_animation.is_moving {
             player_status_for_animation.is_left = target_speed < 0.0;
         }
+
         if (0.0 < target_speed && target_speed <= current_speed)
             || (target_speed < 0.0 && current_speed <= target_speed)
         {
@@ -253,13 +274,20 @@ fn player_control(
         } else {
             impulse.signum() * impulse.powi(4)
         };
-        velocity.apply_impulse(
-            mass_props,
-            vector![1.0, 0.0]
-                * time.delta().as_secs_f32()
-                * player_control.impulse_coefficient
-                * impulse,
-        );
+        let mut impulse = movement_vector
+            * time.delta().as_secs_f32()
+            * player_control.impulse_coefficient
+            * impulse;
+        let uphill = impulse.normalize().dot(&vector![0.0, 1.0]);
+        if 0.01 <= uphill {
+            let efficiency = if target_speed.signum() as i32 == current_speed.signum() as i32 {
+                player_control.uphill_move_efficiency
+            } else {
+                player_control.uphill_stop_efficiency
+            };
+            impulse *= 1.0 - uphill.powf(efficiency);
+        }
+        velocity.apply_impulse(mass_props, impulse);
     }
 }
 
