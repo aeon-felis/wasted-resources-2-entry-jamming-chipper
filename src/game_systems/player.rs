@@ -3,11 +3,11 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_tweening::lens::TransformRotateYLens;
-use bevy_tweening::{Animator, Tween, EaseFunction, TweeningType, Lens, AnimatorState};
+use bevy_tweening::{Animator, AnimatorState, EaseFunction, Lens, Tween, TweeningType};
 use ezinput::prelude::*;
 
 use crate::global_types::{AppState, DespawnWithLevel, InputBinding, PlayerControl};
-use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode, GltfNodeAddedEvent};
+use crate::gltf_spawner::{GltfNodeAddedEvent, SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
 
 pub struct PlayerPlugin;
@@ -34,10 +34,7 @@ struct PlayerStatusForAnimation {
     leg_entities: [Entity; 2],
 }
 
-fn setup_player(
-    mut commands: Commands,
-    model_assets: Res<ModelAssets>,
-) {
+fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
     let mut cmd = commands.spawn();
     cmd.insert_bundle(RigidBodyBundle {
         body_type: RigidBodyType::Dynamic.into(),
@@ -101,28 +98,32 @@ fn setup_player(
     let mut body_entity = None;
     let mut leg_entities = Vec::new();
     cmd.with_children(|commands| {
-        body_entity = Some(commands.spawn_bundle((
+        body_entity = Some(
+            commands
+                .spawn_bundle((
                     GlobalTransform::identity(),
                     Transform::identity(),
                     SpawnGltfNode(model_assets.player.clone(), "Body"),
                     Animator::<Transform>::default(),
-        )).with_children(|commands| {
-            for (node_name, leg_type) in [
-                ("RightLeg", PlayerLeg::Right),
-                ("LeftLeg", PlayerLeg::Left),
-            ] {
-                leg_entities.push({
-                    commands
-                        .spawn()
-                        .insert(Transform::identity())
-                        .insert(GlobalTransform::identity())
-                        .insert(SpawnGltfNode(model_assets.player.clone(), node_name))
-                        .insert(Animator::<Transform>::default())
-                        .insert(leg_type)
-                        .id()
-                });
-            }
-        }).id());
+                ))
+                .with_children(|commands| {
+                    for (node_name, leg_type) in
+                        [("RightLeg", PlayerLeg::Right), ("LeftLeg", PlayerLeg::Left)]
+                    {
+                        leg_entities.push({
+                            commands
+                                .spawn()
+                                .insert(Transform::identity())
+                                .insert(GlobalTransform::identity())
+                                .insert(SpawnGltfNode(model_assets.player.clone(), node_name))
+                                .insert(Animator::<Transform>::default())
+                                .insert(leg_type)
+                                .id()
+                        });
+                    }
+                })
+                .id(),
+        );
     });
     cmd.insert(PlayerControl {
         max_speed: 20.0,
@@ -183,7 +184,14 @@ fn player_control(
         0.0
     };
     let target_speed = movement_value;
-    for (player_entity, mut velocity, mass_props, mut player_control, mut player_status_for_animation) in query.iter_mut() {
+    for (
+        player_entity,
+        mut velocity,
+        mass_props,
+        mut player_control,
+        mut player_status_for_animation,
+    ) in query.iter_mut()
+    {
         let standing_on = narrow_phase
             .contacts_with(player_entity.handle())
             .filter(|contact| contact.has_any_active_contact)
@@ -266,23 +274,19 @@ fn add_animation(
             const POSITIVE_ANGLE: f32 = 0.4;
             const NEGATIVE_ANGLE: f32 = -0.2;
             let (start, end) = match leg {
-                PlayerLeg::Right => {
-                    (POSITIVE_ANGLE, NEGATIVE_ANGLE)
-                }
-                PlayerLeg::Left => {
-                    (NEGATIVE_ANGLE, POSITIVE_ANGLE)
-                }
+                PlayerLeg::Right => (POSITIVE_ANGLE, NEGATIVE_ANGLE),
+                PlayerLeg::Left => (NEGATIVE_ANGLE, POSITIVE_ANGLE),
             };
             animator.set_tweenable(Tween::new(
-                    EaseFunction::QuadraticInOut,
-                    TweeningType::PingPong,
-                    Duration::from_millis(200),
-                    LegLens {
-                        base_transform,
-                        translation,
-                        start,
-                        end,
-                    },
+                EaseFunction::QuadraticInOut,
+                TweeningType::PingPong,
+                Duration::from_millis(200),
+                LegLens {
+                    base_transform,
+                    translation,
+                    start,
+                    end,
+                },
             ));
             animator.state = AnimatorState::Paused;
         }
@@ -315,20 +319,20 @@ fn player_animation(
             status_for_animation.was_left = status_for_animation.is_left;
             let mut animator = animators.get_mut(status_for_animation.body_entity).unwrap();
             animator.set_tweenable(Tween::new(
-                    EaseFunction::QuadraticInOut,
-                    TweeningType::Once,
-                    Duration::from_millis(100),
-                    if status_for_animation.is_left {
-                        TransformRotateYLens {
-                            start: 0.0,
-                            end: std::f32::consts::PI,
-                        }
-                    } else {
-                        TransformRotateYLens {
-                            start: std::f32::consts::PI,
-                            end: 2.0 * std::f32::consts::PI,
-                        }
-                    },
+                EaseFunction::QuadraticInOut,
+                TweeningType::Once,
+                Duration::from_millis(100),
+                if status_for_animation.is_left {
+                    TransformRotateYLens {
+                        start: 0.0,
+                        end: std::f32::consts::PI,
+                    }
+                } else {
+                    TransformRotateYLens {
+                        start: std::f32::consts::PI,
+                        end: 2.0 * std::f32::consts::PI,
+                    }
+                },
             ));
         }
 
