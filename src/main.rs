@@ -5,6 +5,7 @@ use bevy::prelude::{App, ClearColor, Color, Msaa, WindowDescriptor};
 use bevy::DefaultPlugins;
 use bevy_egui_kbgp::{KbgpNavBindings, KbgpPlugin, KbgpSettings};
 use bevy_rapier2d::physics::{NoUserData, RapierPhysicsPlugin};
+use bevy_tweening::TweeningPlugin;
 use jamming_chipper::GamePlugin;
 
 fn main() {
@@ -20,6 +21,7 @@ fn main() {
     app.add_plugins(DefaultPlugins);
     app.add_plugin(GamePlugin);
     app.add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
+    app.add_plugin(TweeningPlugin);
     app.add_plugin(bevy_egui_kbgp::bevy_egui::EguiPlugin);
     app.insert_resource(bevy_egui_kbgp::bevy_egui::EguiSettings { scale_factor: 2.0 });
     app.add_plugin(KbgpPlugin);

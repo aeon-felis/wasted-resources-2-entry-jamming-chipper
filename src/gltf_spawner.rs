@@ -8,13 +8,16 @@ pub struct GltfSpawnerPlugin;
 
 impl Plugin for GltfSpawnerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(spawn_gltf_nodes);
-        app.add_system(spawn_colliders);
+        app.add_event::<GltfNodeAddedEvent>();
+        app.add_system_to_stage(CoreStage::PostUpdate, spawn_gltf_nodes);
+        app.add_system_to_stage(CoreStage::PostUpdate, spawn_colliders);
     }
 }
 
 #[derive(Component)]
 pub struct SpawnGltfNode(pub Handle<Gltf>, pub &'static str);
+
+pub struct GltfNodeAddedEvent(pub Entity);
 
 #[derive(Component)]
 pub struct SpawnCollider {
@@ -28,6 +31,7 @@ fn spawn_gltf_nodes(
     query: Query<(Entity, &SpawnGltfNode)>,
     gltfs: Res<Assets<Gltf>>,
     spawner: Spawner,
+    mut event_writer: EventWriter<GltfNodeAddedEvent>,
 ) {
     for (entity, SpawnGltfNode(gltf, node_name)) in query.iter() {
         let gltf = if let Some(gltf) = gltfs.get(gltf) {
@@ -40,6 +44,7 @@ fn spawn_gltf_nodes(
         let mut cmd = commands.entity(entity);
         cmd.remove::<SpawnGltfNode>();
         spawner.spawn_node_recursive(gltf_node, &mut cmd);
+        event_writer.send(GltfNodeAddedEvent(entity));
     }
 }
 
