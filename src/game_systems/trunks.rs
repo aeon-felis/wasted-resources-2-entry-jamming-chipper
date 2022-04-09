@@ -9,7 +9,7 @@ pub struct TrunksPlugin;
 
 impl Plugin for TrunksPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set({ SystemSet::on_update(AppState::Game).with_system(spawn_trunk) });
+        app.add_system_set(SystemSet::on_update(AppState::Game).with_system(spawn_trunk));
     }
 }
 
