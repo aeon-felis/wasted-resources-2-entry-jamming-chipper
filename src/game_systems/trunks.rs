@@ -28,15 +28,15 @@ fn spawn_trunk(
             //flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
             local_mprops: MassProperties {
                 local_com: point![0.0, 0.0],
-                inv_mass: 1.0 / 300.0,
-                inv_principal_inertia_sqrt: 1.0 / 30.0,
+                inv_mass: 1.0 / 3000.0,
+                inv_principal_inertia_sqrt: 1.0 / 300.0,
             },
             ..Default::default()
         }
         .into(),
         position: point![10.0, 5.0].into(),
         velocity: RigidBodyVelocity {
-            linvel: vector![-5.0, 3.0],
+            linvel: vector![-6.0, 3.0],
             angvel: -1.0,
         }
         .into(),

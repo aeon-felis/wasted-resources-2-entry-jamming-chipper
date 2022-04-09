@@ -42,7 +42,7 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
             flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
             local_mprops: MassProperties {
                 local_com: point![0.0, 0.0],
-                inv_mass: 1.0 / 3.0,
+                inv_mass: 1.0 / 80.0,
                 inv_principal_inertia_sqrt: 0.0,
             },
             ..Default::default()
@@ -61,7 +61,7 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
         gltf: model_assets.player.clone(),
         node_name: "Collider",
         material: ColliderMaterial {
-            friction: 2.0,
+            friction: 4.0,
             // restitution: todo!(),
             // friction_combine_rule: todo!(),
             // restitution_combine_rule: todo!(),
@@ -127,8 +127,8 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
     });
     cmd.insert(PlayerControl {
         max_speed: 20.0,
-        impulse_coefficient: 1000.0,
-        jump_power_coefficient: 30.0,
+        impulse_coefficient: 40_000.0,
+        jump_power_coefficient: 800.0,
         jump_time_coefficient: 7.5,
         jump_potential: 0.0,
         last_stood_on: vector![0.0, 1.0],
