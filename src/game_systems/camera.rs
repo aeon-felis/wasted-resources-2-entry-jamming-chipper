@@ -10,7 +10,7 @@ impl Plugin for CameraPlugin {
 
 fn setup_camera(mut commands: Commands) {
     let camera = PerspectiveCameraBundle {
-        transform: Transform::from_xyz(0.0, 10.0, 30.0)
+        transform: Transform::from_xyz(0.0, 10.0, 60.0)
             .looking_at(Vec3::new(5.0, 0.0, 0.0), Vec3::Y),
         ..PerspectiveCameraBundle::new_3d()
     };

@@ -35,6 +35,7 @@ fn setup_arena(
     })
     .insert(DespawnWithLevel);
 
+    /*
     let mut cmd = commands.spawn();
     cmd.insert_bundle(RigidBodyBundle {
         body_type: RigidBodyType::Static.into(),
@@ -53,4 +54,5 @@ fn setup_arena(
         ..Default::default()
     })
     .insert(DespawnWithLevel);
+    */
 }

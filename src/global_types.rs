@@ -40,3 +40,6 @@ pub struct PlayerControl {
     pub uphill_move_efficiency: f32,
     pub uphill_stop_efficiency: f32,
 }
+
+#[derive(Component)]
+pub struct Trunk;
