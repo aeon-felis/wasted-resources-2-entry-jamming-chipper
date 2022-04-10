@@ -28,12 +28,12 @@ pub struct SpawnCollider {
 
 fn spawn_gltf_nodes(
     mut commands: Commands,
-    query: Query<(Entity, &SpawnGltfNode)>,
+    query: Query<(Entity, &SpawnGltfNode, Option<&Transform>)>,
     gltfs: Res<Assets<Gltf>>,
     spawner: Spawner,
     mut event_writer: EventWriter<GltfNodeAddedEvent>,
 ) {
-    for (entity, SpawnGltfNode(gltf, node_name)) in query.iter() {
+    for (entity, SpawnGltfNode(gltf, node_name), orig_transform) in query.iter() {
         let gltf = if let Some(gltf) = gltfs.get(gltf) {
             gltf
         } else {
@@ -43,7 +43,7 @@ fn spawn_gltf_nodes(
         let gltf_node = spawner.gltf_nodes.get(gltf_node).unwrap();
         let mut cmd = commands.entity(entity);
         cmd.remove::<SpawnGltfNode>();
-        spawner.spawn_node_recursive(gltf_node, &mut cmd);
+        spawner.spawn_node_recursive(gltf_node, &mut cmd, orig_transform);
         event_writer.send(GltfNodeAddedEvent(entity));
     }
 }
@@ -57,8 +57,17 @@ struct Spawner<'w, 's> {
 }
 
 impl<'w, 's> Spawner<'w, 's> {
-    fn spawn_node_recursive(&self, gltf_node: &GltfNode, cmd: &mut EntityCommands) {
-        cmd.insert(gltf_node.transform);
+    fn spawn_node_recursive(
+        &self,
+        gltf_node: &GltfNode,
+        cmd: &mut EntityCommands,
+        orig_transform: Option<&Transform>,
+    ) {
+        if let Some(orig_transform) = orig_transform {
+            cmd.insert(*orig_transform * gltf_node.transform);
+        } else {
+            cmd.insert(gltf_node.transform);
+        }
         if let Some(mesh) = &gltf_node.mesh {
             let mesh = self.gltf_meshes.get(mesh).unwrap();
             cmd.with_children(|commands| {
@@ -76,7 +85,7 @@ impl<'w, 's> Spawner<'w, 's> {
                 for child_node in gltf_node.children.iter() {
                     let mut cmd = commands.spawn();
                     cmd.insert(GlobalTransform::identity());
-                    self.spawn_node_recursive(child_node, &mut cmd);
+                    self.spawn_node_recursive(child_node, &mut cmd, None);
                 }
             });
         }

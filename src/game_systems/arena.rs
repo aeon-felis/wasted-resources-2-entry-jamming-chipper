@@ -17,6 +17,10 @@ fn setup_arena(
     mut meshes: ResMut<Assets<Mesh>>,
     mut meterials: ResMut<Assets<StandardMaterial>>,
 ) {
+    if true {
+        // TODO: Do I still need this file? I might need it later...
+        return;
+    }
     let mut cmd = commands.spawn();
     cmd.insert_bundle(RigidBodyBundle {
         body_type: RigidBodyType::Static.into(),

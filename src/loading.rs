@@ -15,10 +15,12 @@ fn init_game_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(ModelAssets {
         player: asset_server.load("models/player.glb"),
         trunk: asset_server.load("models/trunk.glb"),
+        chipper: asset_server.load("models/chipper.glb"),
     });
 }
 
 pub struct ModelAssets {
     pub player: Handle<Gltf>,
     pub trunk: Handle<Gltf>,
+    pub chipper: Handle<Gltf>,
 }
