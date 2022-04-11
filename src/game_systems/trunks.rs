@@ -1,15 +1,21 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use crate::global_types::{AppState, DespawnWithLevel, Trunk};
+use crate::global_types::{AppState, Chipper, DespawnWithLevel, Trunk};
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
+use crate::utils::entities_ordered_by_type;
 
 pub struct TrunksPlugin;
 
 impl Plugin for TrunksPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_update(AppState::Game).with_system(spawn_trunk));
+        app.add_system_set({
+            SystemSet::on_update(AppState::Game)
+                .with_system(spawn_trunk)
+                .with_system(handle_trunk_hitting_chipper)
+                .with_system(move_kinematic_trunks)
+        });
     }
 }
 
@@ -37,7 +43,7 @@ fn spawn_trunk(
         position: point![10.0, 5.0].into(),
         velocity: RigidBodyVelocity {
             linvel: vector![-6.0, 3.0],
-            angvel: -1.0,
+            angvel: -0.5,
         }
         .into(),
         // damping: RigidBodyDamping {
@@ -58,10 +64,42 @@ fn spawn_trunk(
             // restitution_combine_rule: todo!(),
             ..Default::default()
         },
+        flags: Default::default(),
     });
     cmd.insert(Transform::from_xyz(0.0, 2.0, 0.0));
     cmd.insert(GlobalTransform::identity());
     cmd.insert(SpawnGltfNode(model_assets.trunk.clone(), "Trunk"));
     cmd.insert(Trunk);
     cmd.insert(DespawnWithLevel);
+}
+
+fn handle_trunk_hitting_chipper(
+    mut reader: EventReader<ContactEvent>,
+    mut trunks_query: Query<&mut RigidBodyTypeComponent, With<Trunk>>,
+    chippers_query: Query<(), With<Chipper>>,
+) {
+    for event in reader.iter() {
+        if let ContactEvent::Started(handle1, handle2) = event {
+            if let Some([trunk_entity, _chipper_entity]) = entities_ordered_by_type!(
+                [handle1.entity(), handle2.entity()],
+                trunks_query,
+                chippers_query,
+            ) {
+                if let Ok(mut trunk_rigid_body_type) = trunks_query.get_mut(trunk_entity) {
+                    trunk_rigid_body_type.0 = RigidBodyType::KinematicVelocityBased;
+                }
+            }
+        }
+    }
+}
+
+fn move_kinematic_trunks(
+    mut trunks: Query<(&RigidBodyTypeComponent, &mut RigidBodyVelocityComponent), With<Trunk>>,
+) {
+    for (rigid_body_type, mut velocity) in trunks.iter_mut() {
+        if rigid_body_type.0 != RigidBodyType::KinematicVelocityBased {
+            continue;
+        }
+        velocity.0.linvel = vector![0.0, -1.0];
+    }
 }

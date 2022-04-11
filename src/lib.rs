@@ -3,6 +3,7 @@ pub mod global_types;
 pub mod gltf_spawner;
 mod loading;
 mod menu;
+mod utils;
 
 use bevy::app::App;
 #[cfg(debug_assertions)]

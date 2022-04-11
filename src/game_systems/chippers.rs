@@ -5,7 +5,7 @@ use bevy_rapier2d::prelude::*;
 use bevy_tweening::lens::TransformRotateXLens;
 use bevy_tweening::{Animator, EaseMethod, Tween, TweeningType};
 
-use crate::global_types::{AppState, DespawnWithLevel};
+use crate::global_types::{AppState, Chipper, DespawnWithLevel};
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
 
@@ -62,7 +62,12 @@ fn setup_chippers(mut commands: Commands, model_assets: Res<ModelAssets>) {
             gltf: model_assets.chipper.clone(),
             node_name: "Collider",
             material: Default::default(),
+            flags: ColliderFlags {
+                active_events: ActiveEvents::CONTACT_EVENTS,
+                ..Default::default()
+            },
         });
+        cmd.insert(Chipper);
         cmd.insert(DespawnWithLevel);
     }
 }

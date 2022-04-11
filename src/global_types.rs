@@ -42,4 +42,7 @@ pub struct PlayerControl {
 }
 
 #[derive(Component)]
+pub struct Chipper;
+
+#[derive(Component)]
 pub struct Trunk;

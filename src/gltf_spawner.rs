@@ -24,6 +24,7 @@ pub struct SpawnCollider {
     pub gltf: Handle<Gltf>,
     pub node_name: &'static str,
     pub material: ColliderMaterial,
+    pub flags: ColliderFlags,
 }
 
 fn spawn_gltf_nodes(
@@ -106,6 +107,7 @@ fn spawn_colliders(
             gltf,
             node_name,
             material,
+            flags,
         },
     ) in query.iter()
     {
@@ -168,6 +170,7 @@ fn spawn_colliders(
         cmd.insert_bundle(ColliderBundle {
             shape: SharedShape::new(tri_mesh).into(),
             material: (*material).into(),
+            flags: (*flags).into(),
             mass_properties: ColliderMassProps::Density(0.0).into(),
             ..Default::default()
         });

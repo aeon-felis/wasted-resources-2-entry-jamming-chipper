@@ -67,6 +67,7 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
             // restitution_combine_rule: todo!(),
             ..Default::default()
         },
+        flags: Default::default(),
     });
     //cmd.insert_bundle(ColliderBundle {
     //shape: ColliderShape::capsule(point![0.0, -0.5], point![0.0, 0.5], 0.5).into(),
