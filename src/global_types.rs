@@ -46,3 +46,9 @@ pub struct Chipper;
 
 #[derive(Component)]
 pub struct Trunk;
+
+#[derive(Component)]
+pub struct SpawnsWoodchips(pub Timer);
+
+#[derive(Component)]
+pub struct Woodchip;

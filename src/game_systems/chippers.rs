@@ -54,7 +54,7 @@ fn setup_chippers(mut commands: Commands, model_assets: Res<ModelAssets>) {
         });
         cmd.insert_bundle(RigidBodyBundle {
             body_type: RigidBodyType::Static.into(),
-            position: point![x as f32 * 2.1, -4.0].into(),
+            position: point![x as f32 * 2.1, -1.0].into(),
             ..Default::default()
         });
         cmd.insert(RigidBodyPositionSync::Discrete);

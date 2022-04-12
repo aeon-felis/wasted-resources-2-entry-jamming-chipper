@@ -4,6 +4,7 @@ mod chippers;
 mod input;
 mod player;
 mod trunks;
+mod woodchips;
 
 use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::*;
@@ -26,6 +27,7 @@ impl Plugin for GameSystemsPlugin {
         app.add_plugin(player::PlayerPlugin);
         app.add_plugin(trunks::TrunksPlugin);
         app.add_plugin(chippers::ChippersPlugin);
+        app.add_plugin(woodchips::WoodshipsPlugin);
         app.add_system_set({
             SystemSet::on_enter(AppState::ClearLevelAndThenLoad)
                 .with_system(clear_and_load)

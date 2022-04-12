@@ -1,7 +1,9 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use crate::global_types::{AppState, Chipper, DespawnWithLevel, Trunk};
+use crate::global_types::{AppState, Chipper, DespawnWithLevel, SpawnsWoodchips, Trunk};
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
 use crate::utils::entities_ordered_by_type;
@@ -77,6 +79,7 @@ fn handle_trunk_hitting_chipper(
     mut reader: EventReader<ContactEvent>,
     mut trunks_query: Query<&mut RigidBodyTypeComponent, With<Trunk>>,
     chippers_query: Query<(), With<Chipper>>,
+    mut commands: Commands,
 ) {
     for event in reader.iter() {
         if let ContactEvent::Started(handle1, handle2) = event {
@@ -87,6 +90,9 @@ fn handle_trunk_hitting_chipper(
             ) {
                 if let Ok(mut trunk_rigid_body_type) = trunks_query.get_mut(trunk_entity) {
                     trunk_rigid_body_type.0 = RigidBodyType::KinematicVelocityBased;
+                    commands
+                        .entity(trunk_entity)
+                        .insert(SpawnsWoodchips(Timer::new(Duration::ZERO, false)));
                 }
             }
         }

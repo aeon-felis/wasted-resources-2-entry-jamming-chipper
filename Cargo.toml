@@ -33,7 +33,7 @@ dev = [
 bevy = { version = "0.6", default-features = false }
 bevy_kira_audio = { version = "0.8" }
 bevy_asset_loader = { version = "0.9" }
-rand = "0.8.3"
+rand = "0.8.5"
 bevy_rapier2d = "0.12.1"
 bevy-egui-kbgp = "0.2.0"
 ezinput = "0.2.3"

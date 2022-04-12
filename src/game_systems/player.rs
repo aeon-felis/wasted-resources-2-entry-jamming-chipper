@@ -48,7 +48,7 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
             ..Default::default()
         }
         .into(),
-        position: point![0.0, 2.0].into(),
+        position: point![-3.0, 2.0].into(),
         // damping: RigidBodyDamping {
         // linear_damping: 1.0,
         // angular_damping: 0.0,
