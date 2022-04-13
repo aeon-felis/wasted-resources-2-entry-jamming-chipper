@@ -32,6 +32,7 @@ pub struct PlayerControl {
     pub max_speed: f32,
     pub impulse_coefficient: f32,
     pub jump_power_coefficient: f32,
+    pub jump_from_woodchip_power_coefficient: f32,
     pub jump_time_coefficient: f32,
     pub jump_potential: f32,
     pub last_stood_on: Vector2<f32>,

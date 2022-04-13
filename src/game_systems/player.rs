@@ -67,7 +67,10 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
             // restitution_combine_rule: todo!(),
             ..Default::default()
         },
-        flags: Default::default(),
+        flags: ColliderFlags {
+            active_events: ActiveEvents::CONTACT_EVENTS,
+            ..Default::default()
+        },
     });
     //cmd.insert_bundle(ColliderBundle {
     //shape: ColliderShape::capsule(point![0.0, -0.5], point![0.0, 0.5], 0.5).into(),
@@ -130,6 +133,7 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
         max_speed: 20.0,
         impulse_coefficient: 40_000.0,
         jump_power_coefficient: 800.0,
+        jump_from_woodchip_power_coefficient: 200.0,
         jump_time_coefficient: 7.5,
         jump_potential: 0.0,
         last_stood_on: vector![0.0, 1.0],

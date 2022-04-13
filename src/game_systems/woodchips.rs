@@ -4,7 +4,9 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_tweening::{Animator, AnimatorState};
 
-use crate::global_types::{AppState, Chipper, DespawnWithLevel, SpawnsWoodchips, Woodchip};
+use crate::global_types::{
+    AppState, Chipper, DespawnWithLevel, PlayerControl, SpawnsWoodchips, Woodchip,
+};
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
 use crate::utils::{entities_ordered_by_type, ok_or};
@@ -17,6 +19,7 @@ impl Plugin for WoodshipsPlugin {
             SystemSet::on_update(AppState::Game)
                 .with_system(spawn_woodchips)
                 .with_system(handle_chip_hitting_chipper)
+                .with_system(handle_player_jump_from_chipper)
         });
     }
 }
@@ -162,6 +165,60 @@ fn handle_chip_hitting_chipper(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+fn handle_player_jump_from_chipper(
+    mut reader: EventReader<ContactEvent>,
+    woodchips_query: Query<&Woodchip>,
+    mut player_query: Query<(
+        &mut PlayerControl,
+        &mut RigidBodyVelocityComponent,
+        &RigidBodyMassPropsComponent,
+    )>,
+    mut chippers_query: Query<(&mut Chipper, &Children)>,
+    mut saws_query: Query<&mut Animator<Transform>>,
+    mut commands: Commands,
+) {
+    for event in reader.iter() {
+        if let ContactEvent::Started(handle1, handle2) = event {
+            if let Some([woodchip_entity, player_entity]) = entities_ordered_by_type!(
+                [handle1.entity(), handle2.entity()],
+                woodchips_query,
+                player_query,
+            ) {
+                let chipper_to_unjam = if let Ok(Woodchip::StuckInChipper(chipper)) =
+                    woodchips_query.get(woodchip_entity)
+                {
+                    chipper
+                } else {
+                    continue;
+                };
+                let (mut player_control, mut player_velocity, player_mass_props) =
+                    ok_or!(player_query.get_mut(player_entity); continue);
+                if player_velocity.linvel.y <= 0.1 {
+                    player_control.jump_potential = 1.0;
+                    let compensate =
+                        player_velocity.linvel.y / player_mass_props.local_mprops.inv_mass;
+                    player_velocity.apply_impulse(
+                        player_mass_props,
+                        vector![0.0, 1.0]
+                            * (player_control.jump_from_woodchip_power_coefficient - compensate),
+                    );
+                }
+
+                let (mut chipper, chipper_children) =
+                    ok_or!(chippers_query.get_mut(*chipper_to_unjam); continue);
+                chipper.is_jammed = false;
+                for saw_entity in chipper_children.iter() {
+                    if let Ok(mut saw_animator) = saws_query.get_mut(*saw_entity) {
+                        saw_animator.state = AnimatorState::Playing;
+                    }
+                }
+
+                commands.entity(woodchip_entity).despawn_recursive();
             }
         }
     }
