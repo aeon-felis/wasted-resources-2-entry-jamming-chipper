@@ -67,7 +67,7 @@ fn setup_chippers(mut commands: Commands, model_assets: Res<ModelAssets>) {
                 ..Default::default()
             },
         });
-        cmd.insert(Chipper);
+        cmd.insert(Chipper { is_jammed: false });
         cmd.insert(DespawnWithLevel);
     }
 }

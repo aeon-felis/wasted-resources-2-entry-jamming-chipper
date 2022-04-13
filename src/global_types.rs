@@ -42,7 +42,9 @@ pub struct PlayerControl {
 }
 
 #[derive(Component)]
-pub struct Chipper;
+pub struct Chipper {
+    pub is_jammed: bool,
+}
 
 #[derive(Component)]
 pub struct Trunk;
@@ -51,4 +53,7 @@ pub struct Trunk;
 pub struct SpawnsWoodchips(pub Timer);
 
 #[derive(Component)]
-pub struct Woodchip;
+pub enum Woodchip {
+    Free,
+    StuckInChipper(Entity),
+}

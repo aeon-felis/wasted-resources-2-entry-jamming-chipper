@@ -2,16 +2,22 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+use bevy_tweening::{Animator, AnimatorState};
 
 use crate::global_types::{AppState, Chipper, DespawnWithLevel, SpawnsWoodchips, Woodchip};
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
+use crate::utils::{entities_ordered_by_type, ok_or};
 
 pub struct WoodshipsPlugin;
 
 impl Plugin for WoodshipsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_update(AppState::Game).with_system(spawn_woodchips));
+        app.add_system_set({
+            SystemSet::on_update(AppState::Game)
+                .with_system(spawn_woodchips)
+                .with_system(handle_chip_hitting_chipper)
+        });
     }
 }
 
@@ -104,7 +110,7 @@ fn spawn_woodchips(
                 cmd.insert(Transform::from_xyz(0.0, 0.0, 0.0));
                 cmd.insert(GlobalTransform::identity());
                 cmd.insert(SpawnGltfNode(model_assets.woodchip.clone(), "Woodchip"));
-                cmd.insert(Woodchip);
+                cmd.insert(Woodchip::Free);
                 cmd.insert(DespawnWithLevel);
             }
             let next_chip_in = 1.0 + 5.0 * rand::random::<f32>();
@@ -112,6 +118,51 @@ fn spawn_woodchips(
                 .0
                 .set_duration(Duration::from_secs_f32(next_chip_in));
             spawner.0.reset();
+        }
+    }
+}
+
+fn handle_chip_hitting_chipper(
+    mut reader: EventReader<ContactEvent>,
+    mut woodchips_query: Query<(
+        &RigidBodyPositionComponent,
+        &mut RigidBodyTypeComponent,
+        &mut Woodchip,
+    )>,
+    mut chippers_query: Query<(&mut Chipper, &Children)>,
+    mut saws_query: Query<&mut Animator<Transform>>,
+    mut commands: Commands,
+) {
+    for event in reader.iter() {
+        if let ContactEvent::Started(handle1, handle2) = event {
+            if let Some([woodchip_entity, chipper_entity]) = entities_ordered_by_type!(
+                [handle1.entity(), handle2.entity()],
+                woodchips_query,
+                chippers_query,
+            ) {
+                let (mut chipper, chipper_children) =
+                    ok_or!(chippers_query.get_mut(chipper_entity); continue);
+                if chipper.is_jammed {
+                    continue;
+                }
+                let (woodchip_transform, mut woodchip_rigid_body_type, mut woodchip) =
+                    ok_or!(woodchips_query.get_mut(woodchip_entity); continue);
+                if !matches!(*woodchip, Woodchip::Free) {
+                    continue;
+                }
+                if woodchip_transform.0.position.rotation.cos_angle().abs() < 0.5 {
+                    commands.entity(woodchip_entity).despawn_recursive();
+                } else {
+                    *woodchip = Woodchip::StuckInChipper(chipper_entity);
+                    woodchip_rigid_body_type.0 = RigidBodyType::Static;
+                    chipper.is_jammed = true;
+                    for saw_entity in chipper_children.iter() {
+                        if let Ok(mut saw_animator) = saws_query.get_mut(*saw_entity) {
+                            saw_animator.state = AnimatorState::Paused;
+                        }
+                    }
+                }
+            }
         }
     }
 }
