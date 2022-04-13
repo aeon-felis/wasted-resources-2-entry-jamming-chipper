@@ -32,6 +32,10 @@ fn main() {
         allow_mouse_wheel_sideways: true,
         allow_gamepads: true,
         bindings: KbgpNavBindings::default().with_wasd_navigation(),
+        disable_default_navigation: true,
+        disable_default_activation: false,
+        prevent_loss_of_focus: true,
+        focus_on_mouse_movement: true,
     });
     app.run();
 }

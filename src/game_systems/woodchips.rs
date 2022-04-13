@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use crate::global_types::{AppState, DespawnWithLevel, SpawnsWoodchips, Woodchip};
+use crate::global_types::{AppState, Chipper, DespawnWithLevel, SpawnsWoodchips, Woodchip};
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
 
@@ -19,11 +19,32 @@ fn spawn_woodchips(
     mut commands: Commands,
     time: Res<Time>,
     model_assets: Res<ModelAssets>,
-    mut spawners_query: Query<(&RigidBodyPositionComponent, &mut SpawnsWoodchips)>,
+    mut spawners_query: Query<(Entity, &RigidBodyPositionComponent, &mut SpawnsWoodchips)>,
+    narrow_phase: Res<NarrowPhase>,
+    chipper_query: Query<&Chipper>,
 ) {
-    for (spawner_position, mut spawner) in spawners_query.iter_mut() {
+    for (spawner_entity, spawner_position, mut spawner) in spawners_query.iter_mut() {
         if spawner.0.tick(time.delta()).just_finished() {
             if !spawner.0.duration().is_zero() {
+                let spawner_handle = spawner_entity.handle();
+                let has_contact_with_chipper =
+                    narrow_phase.contacts_with(spawner_handle).any(|contact| {
+                        if !contact.has_any_active_contact {
+                            return false;
+                        }
+                        let other_entity = if contact.collider1 == spawner_handle {
+                            contact.collider2
+                        } else {
+                            contact.collider1
+                        }
+                        .entity();
+                        chipper_query.get(other_entity).is_ok()
+                    });
+                if !has_contact_with_chipper {
+                    commands.entity(spawner_entity).despawn_recursive();
+                    continue;
+                }
+
                 let spawn_from_position = {
                     let pos1 = spawner_position.0.position * point![-1.0, 0.0];
                     let pos2 = spawner_position.0.position * point![1.0, 0.0];
