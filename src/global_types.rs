@@ -48,7 +48,10 @@ pub struct Chipper {
 }
 
 #[derive(Component)]
-pub struct Trunk;
+pub enum Trunk {
+    Free,
+    InChipper(Entity),
+}
 
 #[derive(Component)]
 pub struct SpawnsWoodchips(pub Timer);

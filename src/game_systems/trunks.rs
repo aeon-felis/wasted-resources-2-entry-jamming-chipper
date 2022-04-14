@@ -6,7 +6,7 @@ use bevy_rapier2d::prelude::*;
 use crate::global_types::{AppState, Chipper, DespawnWithLevel, SpawnsWoodchips, Trunk};
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
-use crate::utils::entities_ordered_by_type;
+use crate::utils::{entities_ordered_by_type, ok_or};
 
 pub struct TrunksPlugin;
 
@@ -33,7 +33,6 @@ fn spawn_trunk(
     cmd.insert_bundle(RigidBodyBundle {
         body_type: RigidBodyType::Dynamic.into(),
         mass_properties: RigidBodyMassProps {
-            //flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
             local_mprops: MassProperties {
                 local_com: point![0.0, 0.0],
                 inv_mass: 1.0 / 3000.0,
@@ -71,28 +70,50 @@ fn spawn_trunk(
     cmd.insert(Transform::from_xyz(0.0, 2.0, 0.0));
     cmd.insert(GlobalTransform::identity());
     cmd.insert(SpawnGltfNode(model_assets.trunk.clone(), "Trunk"));
-    cmd.insert(Trunk);
+    cmd.insert(Trunk::Free);
     cmd.insert(DespawnWithLevel);
 }
 
 fn handle_trunk_hitting_chipper(
     mut reader: EventReader<ContactEvent>,
-    mut trunks_query: Query<&mut RigidBodyTypeComponent, With<Trunk>>,
+    mut trunks_query: Query<(&mut Trunk, &mut RigidBodyTypeComponent)>,
     chippers_query: Query<(), With<Chipper>>,
     mut commands: Commands,
 ) {
     for event in reader.iter() {
-        if let ContactEvent::Started(handle1, handle2) = event {
-            if let Some([trunk_entity, _chipper_entity]) = entities_ordered_by_type!(
-                [handle1.entity(), handle2.entity()],
-                trunks_query,
-                chippers_query,
-            ) {
-                if let Ok(mut trunk_rigid_body_type) = trunks_query.get_mut(trunk_entity) {
-                    trunk_rigid_body_type.0 = RigidBodyType::KinematicVelocityBased;
-                    commands
-                        .entity(trunk_entity)
-                        .insert(SpawnsWoodchips(Timer::new(Duration::ZERO, false)));
+        match event {
+            ContactEvent::Started(handle1, handle2) => {
+                if let Some([trunk_entity, chipper_entity]) = entities_ordered_by_type!(
+                    [handle1.entity(), handle2.entity()],
+                    trunks_query,
+                    chippers_query,
+                ) {
+                    if let Ok((mut trunk, mut trunk_rigid_body_type)) =
+                        trunks_query.get_mut(trunk_entity)
+                    {
+                        if !matches!(*trunk, Trunk::Free) {
+                            continue;
+                        }
+                        trunk_rigid_body_type.0 = RigidBodyType::KinematicVelocityBased;
+                        *trunk = Trunk::InChipper(chipper_entity);
+                        commands
+                            .entity(trunk_entity)
+                            .insert(SpawnsWoodchips(Timer::new(Duration::ZERO, false)));
+                    }
+                }
+            }
+            ContactEvent::Stopped(handle1, handle2) => {
+                if let Some([trunk_entity, chipper_entity]) = entities_ordered_by_type!(
+                    [handle1.entity(), handle2.entity()],
+                    trunks_query,
+                    chippers_query,
+                ) {
+                    let trunk = ok_or!(trunks_query.get_component::<Trunk>(trunk_entity); continue);
+                    if let Trunk::InChipper(chipper) = trunk {
+                        if *chipper == chipper_entity {
+                            commands.entity(trunk_entity).despawn_recursive();
+                        }
+                    }
                 }
             }
         }
