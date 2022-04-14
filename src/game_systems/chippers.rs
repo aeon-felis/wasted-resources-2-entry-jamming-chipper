@@ -1,26 +1,34 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
+use bevy_hanabi::ParticleEffect;
 use bevy_rapier2d::prelude::*;
 use bevy_tweening::lens::TransformRotateXLens;
 use bevy_tweening::{Animator, EaseMethod, Tween, TweeningType};
 
 use crate::global_types::{AppState, Chipper, DespawnWithLevel};
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
-use crate::loading::ModelAssets;
+use crate::loading::{ModelAssets, ParticleEffectsAssets};
 
 pub struct ChippersPlugin;
 
 impl Plugin for ChippersPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(SystemSet::on_enter(AppState::LoadLevel).with_system(setup_chippers));
+        app.add_system_set(SystemSet::on_update(AppState::Game).with_system(set_chipper_effect));
     }
 }
 
-fn setup_chippers(mut commands: Commands, model_assets: Res<ModelAssets>) {
+fn setup_chippers(
+    mut commands: Commands,
+    model_assets: Res<ModelAssets>
+) {
     for x in -3..=3 {
         let mut cmd = commands.spawn();
         cmd.insert(Transform::identity());
+        cmd.insert(GlobalTransform::identity());
+        cmd.insert(Visibility::default());
+        cmd.insert(ComputedVisibility::default());
         cmd.insert(GlobalTransform::identity());
         cmd.with_children(|commands| {
             for (z, lens) in [
@@ -70,5 +78,17 @@ fn setup_chippers(mut commands: Commands, model_assets: Res<ModelAssets>) {
         });
         cmd.insert(Chipper::Free);
         cmd.insert(DespawnWithLevel);
+    }
+}
+
+fn set_chipper_effect(
+    mut commands: Commands,
+    particle_effects_assets: Res<ParticleEffectsAssets>,
+    chippers_query: Query<(Entity, &Chipper), Without<ParticleEffect>>,
+) {
+    if !chippers_query.is_empty() {
+    }
+    for (chipper_entity, _chipper) in chippers_query.iter() {
+        commands.entity(chipper_entity).insert(ParticleEffect::new(particle_effects_assets.chipping_wood.clone()));
     }
 }
