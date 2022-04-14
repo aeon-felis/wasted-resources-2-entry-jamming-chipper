@@ -7,6 +7,7 @@ use ezinput_macros::BindingTypeView;
 #[derive(Clone, Hash, Debug, PartialEq, Eq)]
 pub enum AppState {
     Menu(MenuState),
+    ClearParticleEffects,
     ClearLevelAndThenLoad,
     LoadLevel,
     Game,

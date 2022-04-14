@@ -1,6 +1,9 @@
 use bevy::gltf::Gltf;
 use bevy::prelude::*;
-use bevy_hanabi::{EffectAsset, Spawner, ColorOverLifetimeModifier, Gradient, PositionSphereModifier, ShapeDimension, AccelModifier, SizeOverLifetimeModifier};
+use bevy_hanabi::{
+    AccelModifier, ColorOverLifetimeModifier, EffectAsset, Gradient, PositionSphereModifier,
+    ShapeDimension, SizeOverLifetimeModifier, Spawner,
+};
 //use bevy_asset_loader::{AssetCollection, AssetLoader};
 //use bevy_kira_audio::AudioSource;
 
@@ -28,37 +31,101 @@ fn init_game_assets(
         chipping_wood: particle_effects_assets.add({
             EffectAsset {
                 name: "ChippingWood".to_string(),
-                capacity: 1000,
+                capacity: 100000,
                 spawner: Spawner::rate(5.0.into()),
                 ..Default::default()
             }
             .init(PositionSphereModifier {
                 center: Vec3::ZERO,
-                radius: 2.0,
-                dimension: ShapeDimension::Surface,
-                speed: 6.0.into(),
+                radius: 0.4,
+                dimension: ShapeDimension::Volume,
+                speed: bevy_hanabi::Value::Uniform((1.0, 10.0)),
             })
-            // Every frame, add a gravity-like acceleration downward
             .update(AccelModifier {
-                accel: Vec3::new(0., -3., 0.),
+                accel: Vec3::new(0., -9.8, 0.),
             })
             .render(ColorOverLifetimeModifier {
                 gradient: {
                     let mut gradient = Gradient::new();
                     gradient.add_key(0.0, Vec4::new(0.44, 0.33, 0.23, 1.0));
                     gradient.add_key(1.0, Vec4::new(0.44, 0.33, 0.23, 0.0));
-                    // gradient.add_key(0.0, Vec4::new(1., 0., 0., 1.));
-                    // gradient.add_key(1.0, Vec4::splat(0.));
                     gradient
                 },
             })
             .render(SizeOverLifetimeModifier {
                 gradient: {
                     let mut gradient = Gradient::new();
-                    gradient.add_key(0.0, Vec2::splat(0.5));
-                    gradient.add_key(1.0, Vec2::splat(0.0));
+                    gradient.add_key(0.0, Vec2::splat(0.2));
+                    gradient.add_key(1.0, Vec2::splat(0.1));
                     gradient
-                }
+                },
+            })
+        }),
+        smoke: particle_effects_assets.add({
+            EffectAsset {
+                name: "Smoke".to_string(),
+                capacity: 100000,
+                spawner: Spawner::rate(10.0.into()),
+                ..Default::default()
+            }
+            .init(PositionSphereModifier {
+                center: Vec3::ZERO,
+                radius: 0.4,
+                dimension: ShapeDimension::Volume,
+                speed: bevy_hanabi::Value::Uniform((0.0, 1.0)),
+            })
+            .update(AccelModifier {
+                accel: Vec3::new(0., 1.0, 0.),
+            })
+            .render(ColorOverLifetimeModifier {
+                gradient: {
+                    let mut gradient = Gradient::new();
+                    gradient.add_key(0.0, Vec4::new(0.4, 0.4, 0.4, 0.5));
+                    gradient.add_key(1.0, Vec4::new(0.4, 0.4, 0.4, 0.3));
+                    gradient
+                },
+            })
+            .render(SizeOverLifetimeModifier {
+                gradient: {
+                    let mut gradient = Gradient::new();
+                    gradient.add_key(0.0, Vec2::splat(0.3));
+                    gradient.add_key(1.0, Vec2::splat(0.1));
+                    gradient
+                },
+            })
+        }),
+        blood: particle_effects_assets.add({
+            EffectAsset {
+                name: "Blood".to_string(),
+                capacity: 100000,
+                spawner: Spawner::rate(30.0.into()),
+                ..Default::default()
+            }
+            .init(PositionSphereModifier {
+                center: Vec3::ZERO,
+                radius: 0.4,
+                dimension: ShapeDimension::Volume,
+                speed: bevy_hanabi::Value::Uniform((0.0, 3.0)),
+            })
+            .update(AccelModifier {
+                accel: Vec3::new(0., -9.8, 0.),
+            })
+            .render(ColorOverLifetimeModifier {
+                gradient: {
+                    let mut gradient = Gradient::new();
+                    gradient.add_key(0.0, Vec4::new(0.5412, 0.0118, 0.0118, 1.0));
+                    gradient.add_key(0.9, Vec4::new(0.5412, 0.0118, 0.0118, 1.0));
+                    gradient.add_key(1.0, Vec4::new(0.5412, 0.0118, 0.0118, 0.0));
+                    gradient
+                },
+            })
+            .render(SizeOverLifetimeModifier {
+                gradient: {
+                    let mut gradient = Gradient::new();
+                    gradient.add_key(0.0, Vec2::splat(0.2));
+                    gradient.add_key(1.0, Vec2::splat(0.1));
+                    gradient
+                },
             })
         }),
     });
@@ -73,4 +140,6 @@ pub struct ModelAssets {
 
 pub struct ParticleEffectsAssets {
     pub chipping_wood: Handle<EffectAsset>,
+    pub smoke: Handle<EffectAsset>,
+    pub blood: Handle<EffectAsset>,
 }

@@ -2,9 +2,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use bevy::prelude::{App, ClearColor, Color, Msaa, WindowDescriptor};
-use bevy::DefaultPlugins;
 use bevy::render::options::WgpuOptions;
 use bevy::render::render_resource::WgpuFeatures;
+use bevy::DefaultPlugins;
 use bevy_egui_kbgp::{KbgpNavBindings, KbgpPlugin, KbgpSettings};
 use bevy_hanabi::HanabiPlugin;
 use bevy_rapier2d::physics::{NoUserData, RapierPhysicsPlugin};
@@ -30,6 +30,7 @@ fn main() {
         options
             .features
             .set(WgpuFeatures::VERTEX_WRITABLE_STORAGE, true);
+        options
     });
     app.add_plugin(HanabiPlugin);
     app.add_plugin(bevy_egui_kbgp::bevy_egui::EguiPlugin);

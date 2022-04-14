@@ -1,12 +1,13 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
+use bevy::utils::HashSet;
 use bevy_hanabi::ParticleEffect;
 use bevy_rapier2d::prelude::*;
 use bevy_tweening::lens::TransformRotateXLens;
 use bevy_tweening::{Animator, EaseMethod, Tween, TweeningType};
 
-use crate::global_types::{AppState, Chipper, DespawnWithLevel};
+use crate::global_types::{AppState, Chipper, DespawnWithLevel, Trunk};
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
 use crate::loading::{ModelAssets, ParticleEffectsAssets};
 
@@ -19,10 +20,7 @@ impl Plugin for ChippersPlugin {
     }
 }
 
-fn setup_chippers(
-    mut commands: Commands,
-    model_assets: Res<ModelAssets>
-) {
+fn setup_chippers(mut commands: Commands, model_assets: Res<ModelAssets>) {
     for x in -3..=3 {
         let mut cmd = commands.spawn();
         cmd.insert(Transform::identity());
@@ -77,18 +75,61 @@ fn setup_chippers(
             },
         });
         cmd.insert(Chipper::Free);
+        cmd.insert(ChipperEffect::NoEffect);
         cmd.insert(DespawnWithLevel);
     }
+}
+
+#[derive(Component, PartialEq)]
+enum ChipperEffect {
+    NoEffect,
+    ChippingWood,
+    Smoking,
 }
 
 fn set_chipper_effect(
     mut commands: Commands,
     particle_effects_assets: Res<ParticleEffectsAssets>,
-    chippers_query: Query<(Entity, &Chipper), Without<ParticleEffect>>,
+    trunks_query: Query<&Trunk>,
+    mut chippers_query: Query<(Entity, &Chipper, &mut ChipperEffect)>,
 ) {
-    if !chippers_query.is_empty() {
-    }
-    for (chipper_entity, _chipper) in chippers_query.iter() {
-        commands.entity(chipper_entity).insert(ParticleEffect::new(particle_effects_assets.chipping_wood.clone()));
+    let chipping_chippers: HashSet<Entity> = trunks_query
+        .iter()
+        .filter_map(|trunk| {
+            if let Trunk::InChipper(chippers) = trunk {
+                Some(chippers)
+            } else {
+                None
+            }
+        })
+        .flatten()
+        .copied()
+        .collect();
+    for (chipper_entity, chipper, mut chipper_effect) in chippers_query.iter_mut() {
+        let target_effect = if matches!(chipper, Chipper::Jammed) {
+            ChipperEffect::Smoking
+        } else if chipping_chippers.contains(&chipper_entity) {
+            ChipperEffect::ChippingWood
+        } else {
+            ChipperEffect::NoEffect
+        };
+        if target_effect == *chipper_effect {
+            continue;
+        }
+        *chipper_effect = target_effect;
+        let mut cmd = commands.entity(chipper_entity);
+        match *chipper_effect {
+            ChipperEffect::NoEffect => {
+                cmd.remove::<ParticleEffect>();
+            }
+            ChipperEffect::ChippingWood => {
+                cmd.insert(ParticleEffect::new(
+                    particle_effects_assets.chipping_wood.clone(),
+                ));
+            }
+            ChipperEffect::Smoking => {
+                cmd.insert(ParticleEffect::new(particle_effects_assets.smoke.clone()));
+            }
+        }
     }
 }

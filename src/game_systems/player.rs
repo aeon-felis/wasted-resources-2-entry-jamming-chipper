@@ -1,14 +1,16 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
+use bevy_hanabi::ParticleEffect;
 use bevy_rapier2d::prelude::*;
 use bevy_tweening::lens::TransformRotateYLens;
 use bevy_tweening::{Animator, AnimatorState, EaseFunction, Lens, Tween, TweeningType};
 use ezinput::prelude::*;
 
-use crate::global_types::{AppState, DespawnWithLevel, InputBinding, PlayerControl};
+use crate::global_types::{AppState, Chipper, DespawnWithLevel, InputBinding, PlayerControl};
 use crate::gltf_spawner::{GltfNodeAddedEvent, SpawnCollider, SpawnGltfNode};
-use crate::loading::ModelAssets;
+use crate::loading::{ModelAssets, ParticleEffectsAssets};
+use crate::utils::{entities_ordered_by_type, ok_or, some_or};
 
 pub struct PlayerPlugin;
 
@@ -20,6 +22,7 @@ impl Plugin for PlayerPlugin {
                 .with_system(player_control)
                 .with_system(add_animation)
                 .with_system(player_animation)
+                .with_system(kill_player)
         });
     }
 }
@@ -100,6 +103,8 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
     // });
     cmd.insert(Transform::from_xyz(0.0, 2.0, 0.0));
     cmd.insert(GlobalTransform::identity());
+    cmd.insert(Visibility::default());
+    cmd.insert(ComputedVisibility::default());
     let mut body_entity = None;
     let mut leg_entities = Vec::new();
     cmd.with_children(|commands| {
@@ -151,6 +156,7 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
         body_entity: body_entity.unwrap(),
         leg_entities: leg_entities.try_into().unwrap(),
     });
+    cmd.insert(IsPlayerAlive(true));
     cmd.insert(DespawnWithLevel);
 }
 
@@ -381,5 +387,35 @@ fn player_animation(
                 };
             }
         }
+    }
+}
+
+#[derive(Component)]
+struct IsPlayerAlive(bool);
+
+fn kill_player(
+    mut commands: Commands,
+    particle_effects_assets: Res<ParticleEffectsAssets>,
+    mut reader: EventReader<IntersectionEvent>,
+    mut players_query: Query<&mut IsPlayerAlive>,
+    chippers_query: Query<&Chipper>,
+) {
+    for event in reader.iter() {
+        if !event.intersecting {
+            continue;
+        }
+        let [player_entity, _chipper_entity] = some_or!(entities_ordered_by_type!(
+                [event.collider1.entity(), event.collider2.entity()],
+                players_query,
+                chippers_query,
+        ); continue);
+        let mut is_player_alive = ok_or!(players_query.get_mut(player_entity); continue);
+        if !is_player_alive.0 {
+            continue;
+        }
+        is_player_alive.0 = false;
+        commands
+            .entity(player_entity)
+            .insert(ParticleEffect::new(particle_effects_assets.blood.clone()));
     }
 }

@@ -8,6 +8,7 @@ mod woodchips;
 
 use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::*;
+use bevy_hanabi::{EffectAsset, ParticleEffect};
 
 use crate::global_types::{AppState, DespawnWithLevel};
 
@@ -29,6 +30,11 @@ impl Plugin for GameSystemsPlugin {
         app.add_plugin(chippers::ChippersPlugin);
         app.add_plugin(woodchips::WoodshipsPlugin);
         app.add_system_set({
+            SystemSet::on_enter(AppState::ClearParticleEffects)
+                .with_system(clear_particle_effects)
+                .with_system(create_move_to_state_system(AppState::ClearLevelAndThenLoad))
+        });
+        app.add_system_set({
             SystemSet::on_enter(AppState::ClearLevelAndThenLoad)
                 .with_system(clear_and_load)
                 .with_system(create_move_to_state_system(AppState::LoadLevel))
@@ -38,6 +44,21 @@ impl Plugin for GameSystemsPlugin {
                 .with_system(create_move_to_state_system(AppState::Game))
         });
         app.add_system(enable_disable_physics.with_run_criteria(run_on_state_change));
+    }
+}
+
+fn clear_particle_effects(
+    mut particle_effects_query: Query<&mut ParticleEffect>,
+    mut particle_effects_assets: ResMut<Assets<EffectAsset>>,
+) {
+    for mut particle_effect in particle_effects_query.iter_mut() {
+        if let Some(spawner) = particle_effect.maybe_spawner() {
+            spawner.reset();
+            spawner.set_active(false);
+        }
+    }
+    for (_, effect_asset) in particle_effects_assets.iter_mut() {
+        effect_asset.spawner.reset();
     }
 }
 
@@ -68,7 +89,10 @@ fn enable_disable_physics(
 ) {
     let set_to = match state.current() {
         AppState::Game => true,
-        AppState::Menu(_) | AppState::ClearLevelAndThenLoad | AppState::LoadLevel => false,
+        AppState::Menu(_)
+        | AppState::ClearParticleEffects
+        | AppState::ClearLevelAndThenLoad
+        | AppState::LoadLevel => false,
     };
     rapier_configuration.physics_pipeline_active = set_to;
     rapier_configuration.query_pipeline_active = set_to;

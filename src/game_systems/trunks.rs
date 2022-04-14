@@ -80,7 +80,7 @@ fn spawn_trunk(
 fn handle_trunk_hitting_chipper(
     mut reader: EventReader<IntersectionEvent>,
     mut trunks_query: Query<(&mut Trunk, &mut RigidBodyTypeComponent)>,
-    chippers_query: Query<&mut Chipper>,
+    chippers_query: Query<&Chipper>,
     mut commands: Commands,
 ) {
     for event in reader.iter() {
