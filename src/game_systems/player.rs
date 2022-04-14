@@ -48,7 +48,7 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
             ..Default::default()
         }
         .into(),
-        position: point![-3.0, 2.0].into(),
+        position: point![-3.0, 6.0].into(),
         // damping: RigidBodyDamping {
         // linear_damping: 1.0,
         // angular_damping: 0.0,
@@ -60,6 +60,7 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
     cmd.insert(SpawnCollider {
         gltf: model_assets.player.clone(),
         node_name: "Collider",
+        collider_type: ColliderType::Solid,
         material: ColliderMaterial {
             friction: 4.0,
             // restitution: todo!(),

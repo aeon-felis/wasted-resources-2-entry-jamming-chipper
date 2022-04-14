@@ -61,9 +61,10 @@ fn setup_chippers(mut commands: Commands, model_assets: Res<ModelAssets>) {
         cmd.insert(SpawnCollider {
             gltf: model_assets.chipper.clone(),
             node_name: "Collider",
+            collider_type: ColliderType::Sensor,
             material: Default::default(),
             flags: ColliderFlags {
-                active_events: ActiveEvents::CONTACT_EVENTS,
+                active_events: ActiveEvents::INTERSECTION_EVENTS,
                 ..Default::default()
             },
         });

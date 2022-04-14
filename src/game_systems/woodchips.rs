@@ -9,7 +9,7 @@ use crate::global_types::{
 };
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
-use crate::utils::{entities_ordered_by_type, ok_or};
+use crate::utils::{entities_ordered_by_type, ok_or, some_or};
 
 pub struct WoodshipsPlugin;
 
@@ -80,6 +80,7 @@ fn spawn_woodchips(
                 cmd.insert(SpawnCollider {
                     gltf: model_assets.woodchip.clone(),
                     node_name: "Collider",
+                    collider_type: ColliderType::Solid,
                     material: ColliderMaterial {
                         // friction: 2.0,
                         // restitution: todo!(),
@@ -105,7 +106,7 @@ fn spawn_woodchips(
 }
 
 fn handle_chip_hitting_chipper(
-    mut reader: EventReader<ContactEvent>,
+    mut reader: EventReader<IntersectionEvent>,
     mut woodchips_query: Query<(
         &RigidBodyPositionComponent,
         &mut RigidBodyTypeComponent,
@@ -116,32 +117,31 @@ fn handle_chip_hitting_chipper(
     mut commands: Commands,
 ) {
     for event in reader.iter() {
-        if let ContactEvent::Started(handle1, handle2) = event {
-            if let Some([woodchip_entity, chipper_entity]) = entities_ordered_by_type!(
-                [handle1.entity(), handle2.entity()],
+        let [woodchip_entity, chipper_entity] = some_or!(entities_ordered_by_type!(
+                [event.collider1.entity(), event.collider2.entity()],
                 woodchips_query,
                 chippers_query,
-            ) {
-                let (mut chipper, chipper_children) =
-                    ok_or!(chippers_query.get_mut(chipper_entity); continue);
-                if !matches!(*chipper, Chipper::Free) {
-                    continue;
-                }
-                let (woodchip_transform, mut woodchip_rigid_body_type, mut woodchip) =
-                    ok_or!(woodchips_query.get_mut(woodchip_entity); continue);
-                if !matches!(*woodchip, Woodchip::Free) {
-                    continue;
-                }
-                if woodchip_transform.0.position.rotation.cos_angle().abs() < 0.5 {
-                    commands.entity(woodchip_entity).despawn_recursive();
-                } else {
-                    *woodchip = Woodchip::StuckInChipper(chipper_entity);
-                    woodchip_rigid_body_type.0 = RigidBodyType::Static;
-                    *chipper = Chipper::Jammed;
-                    for saw_entity in chipper_children.iter() {
-                        if let Ok(mut saw_animator) = saws_query.get_mut(*saw_entity) {
-                            saw_animator.state = AnimatorState::Paused;
-                        }
+        ); continue);
+        if event.intersecting {
+            let (mut chipper, chipper_children) =
+                ok_or!(chippers_query.get_mut(chipper_entity); continue);
+            if !matches!(*chipper, Chipper::Free) {
+                continue;
+            }
+            let (woodchip_transform, mut woodchip_rigid_body_type, mut woodchip) =
+                ok_or!(woodchips_query.get_mut(woodchip_entity); continue);
+            if !matches!(*woodchip, Woodchip::Free) {
+                continue;
+            }
+            if woodchip_transform.0.position.rotation.cos_angle().abs() < 0.5 {
+                commands.entity(woodchip_entity).despawn_recursive();
+            } else {
+                *woodchip = Woodchip::StuckInChipper(chipper_entity);
+                woodchip_rigid_body_type.0 = RigidBodyType::Static;
+                *chipper = Chipper::Jammed;
+                for saw_entity in chipper_children.iter() {
+                    if let Ok(mut saw_animator) = saws_query.get_mut(*saw_entity) {
+                        saw_animator.state = AnimatorState::Paused;
                     }
                 }
             }

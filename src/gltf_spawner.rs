@@ -23,6 +23,7 @@ pub struct GltfNodeAddedEvent(pub Entity);
 pub struct SpawnCollider {
     pub gltf: Handle<Gltf>,
     pub node_name: &'static str,
+    pub collider_type: ColliderType,
     pub material: ColliderMaterial,
     pub flags: ColliderFlags,
 }
@@ -106,6 +107,7 @@ fn spawn_colliders(
         SpawnCollider {
             gltf,
             node_name,
+            collider_type,
             material,
             flags,
         },
@@ -169,6 +171,7 @@ fn spawn_colliders(
         );
         cmd.insert_bundle(ColliderBundle {
             shape: SharedShape::new(tri_mesh).into(),
+            collider_type: (*collider_type).into(),
             material: (*material).into(),
             flags: (*flags).into(),
             mass_properties: ColliderMassProps::Density(0.0).into(),

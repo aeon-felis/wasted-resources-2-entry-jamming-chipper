@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::utils::HashSet;
 use bevy_rapier2d::na::Vector2;
 use ezinput::prelude::BindingTypeView;
 use ezinput_macros::BindingTypeView;
@@ -45,14 +46,13 @@ pub struct PlayerControl {
 #[derive(Component)]
 pub enum Chipper {
     Free,
-    Chipping,
     Jammed,
 }
 
 #[derive(Component)]
 pub enum Trunk {
     Free,
-    InChipper(Entity),
+    InChipper(HashSet<Entity>),
 }
 
 #[derive(Component)]

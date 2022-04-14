@@ -38,6 +38,18 @@ macro_rules! entities_ordered_by_type {
 }
 pub(crate) use entities_ordered_by_type;
 
+macro_rules! some_or {
+    ($option:expr; $($if_none:tt)*) => {{
+        if let Some(some) = $option {
+            some
+        } else {
+            $($if_none)*
+        }
+    }}
+}
+
+pub(crate) use some_or;
+
 macro_rules! ok_or {
     ($option:expr; $($if_none:tt)*) => {{
         if let Ok(some) = $option {
