@@ -17,6 +17,7 @@ impl Plugin for TrunksPlugin {
                 .with_system(spawn_trunk)
                 .with_system(handle_trunk_hitting_chipper)
                 .with_system(move_kinematic_trunks)
+                .with_system(handle_lost_trunks)
         });
     }
 }
@@ -77,7 +78,7 @@ fn spawn_trunk(
 fn handle_trunk_hitting_chipper(
     mut reader: EventReader<ContactEvent>,
     mut trunks_query: Query<(&mut Trunk, &mut RigidBodyTypeComponent)>,
-    chippers_query: Query<(), With<Chipper>>,
+    mut chippers_query: Query<&mut Chipper>,
     mut commands: Commands,
 ) {
     for event in reader.iter() {
@@ -88,18 +89,18 @@ fn handle_trunk_hitting_chipper(
                     trunks_query,
                     chippers_query,
                 ) {
-                    if let Ok((mut trunk, mut trunk_rigid_body_type)) =
-                        trunks_query.get_mut(trunk_entity)
-                    {
-                        if !matches!(*trunk, Trunk::Free) {
-                            continue;
-                        }
-                        trunk_rigid_body_type.0 = RigidBodyType::KinematicVelocityBased;
-                        *trunk = Trunk::InChipper(chipper_entity);
-                        commands
-                            .entity(trunk_entity)
-                            .insert(SpawnsWoodchips(Timer::new(Duration::ZERO, false)));
+                    let (mut trunk, mut trunk_rigid_body_type) =
+                        ok_or!(trunks_query.get_mut(trunk_entity); continue);
+                    let mut chipper = ok_or!(chippers_query.get_mut(chipper_entity); continue);
+                    if !matches!(*trunk, Trunk::Free) || !matches!(*chipper, Chipper::Free) {
+                        continue;
                     }
+                    trunk_rigid_body_type.0 = RigidBodyType::KinematicVelocityBased;
+                    *trunk = Trunk::InChipper(chipper_entity);
+                    *chipper = Chipper::Chipping;
+                    commands
+                        .entity(trunk_entity)
+                        .insert(SpawnsWoodchips(Timer::new(Duration::ZERO, false)));
                 }
             }
             ContactEvent::Stopped(handle1, handle2) => {
@@ -109,8 +110,12 @@ fn handle_trunk_hitting_chipper(
                     chippers_query,
                 ) {
                     let trunk = ok_or!(trunks_query.get_component::<Trunk>(trunk_entity); continue);
-                    if let Trunk::InChipper(chipper) = trunk {
-                        if *chipper == chipper_entity {
+                    if let Trunk::InChipper(trunk_chipper_entity) = trunk {
+                        if *trunk_chipper_entity == chipper_entity {
+                            let mut chipper =
+                                ok_or!(chippers_query.get_mut(chipper_entity); continue);
+                            assert!(matches!(*chipper, Chipper::Chipping));
+                            *chipper = Chipper::Free;
                             commands.entity(trunk_entity).despawn_recursive();
                         }
                     }
@@ -128,5 +133,16 @@ fn move_kinematic_trunks(
             continue;
         }
         velocity.0.linvel = vector![0.0, -1.0];
+    }
+}
+
+fn handle_lost_trunks(
+    mut commands: Commands,
+    trunks: Query<(Entity, &Trunk, &RigidBodyPositionComponent)>,
+) {
+    for (trunk_entity, trunk, trunk_position) in trunks.iter() {
+        if matches!(trunk, Trunk::Free) && trunk_position.position.translation.y < -8.0 {
+            commands.entity(trunk_entity).despawn_recursive();
+        }
     }
 }

@@ -43,8 +43,10 @@ pub struct PlayerControl {
 }
 
 #[derive(Component)]
-pub struct Chipper {
-    pub is_jammed: bool,
+pub enum Chipper {
+    Free,
+    Chipping,
+    Jammed,
 }
 
 #[derive(Component)]

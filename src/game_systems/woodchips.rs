@@ -124,7 +124,7 @@ fn handle_chip_hitting_chipper(
             ) {
                 let (mut chipper, chipper_children) =
                     ok_or!(chippers_query.get_mut(chipper_entity); continue);
-                if chipper.is_jammed {
+                if !matches!(*chipper, Chipper::Free) {
                     continue;
                 }
                 let (woodchip_transform, mut woodchip_rigid_body_type, mut woodchip) =
@@ -137,7 +137,7 @@ fn handle_chip_hitting_chipper(
                 } else {
                     *woodchip = Woodchip::StuckInChipper(chipper_entity);
                     woodchip_rigid_body_type.0 = RigidBodyType::Static;
-                    chipper.is_jammed = true;
+                    *chipper = Chipper::Jammed;
                     for saw_entity in chipper_children.iter() {
                         if let Ok(mut saw_animator) = saws_query.get_mut(*saw_entity) {
                             saw_animator.state = AnimatorState::Paused;
@@ -190,7 +190,7 @@ fn handle_player_jump_from_chipper(
 
                 let (mut chipper, chipper_children) =
                     ok_or!(chippers_query.get_mut(*chipper_to_unjam); continue);
-                chipper.is_jammed = false;
+                *chipper = Chipper::Free;
                 for saw_entity in chipper_children.iter() {
                     if let Ok(mut saw_animator) = saws_query.get_mut(*saw_entity) {
                         saw_animator.state = AnimatorState::Playing;
