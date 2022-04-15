@@ -1,15 +1,16 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use bevy_hanabi::ParticleEffect;
 use bevy_rapier2d::prelude::*;
 use bevy_tweening::lens::TransformRotateYLens;
 use bevy_tweening::{Animator, AnimatorState, EaseFunction, Lens, Tween, TweeningType};
 use ezinput::prelude::*;
 
-use crate::global_types::{AppState, Chipper, DespawnWithLevel, InputBinding, PlayerControl};
+use crate::global_types::{
+    AppState, Chipper, DespawnWithLevel, InputBinding, ParticleEffectType, PlayerControl,
+};
 use crate::gltf_spawner::{GltfNodeAddedEvent, SpawnCollider, SpawnGltfNode};
-use crate::loading::{ModelAssets, ParticleEffectsAssets};
+use crate::loading::ModelAssets;
 use crate::utils::{entities_ordered_by_type, ok_or, some_or};
 
 pub struct PlayerPlugin;
@@ -395,7 +396,6 @@ struct IsPlayerAlive(bool);
 
 fn kill_player(
     mut commands: Commands,
-    particle_effects_assets: Res<ParticleEffectsAssets>,
     mut reader: EventReader<IntersectionEvent>,
     mut players_query: Query<&mut IsPlayerAlive>,
     chippers_query: Query<&Chipper>,
@@ -416,6 +416,6 @@ fn kill_player(
         is_player_alive.0 = false;
         commands
             .entity(player_entity)
-            .insert(ParticleEffect::new(particle_effects_assets.blood.clone()));
+            .insert(ParticleEffectType::Blood);
     }
 }

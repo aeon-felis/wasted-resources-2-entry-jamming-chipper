@@ -7,9 +7,9 @@ use bevy_rapier2d::prelude::*;
 use bevy_tweening::lens::TransformRotateXLens;
 use bevy_tweening::{Animator, EaseMethod, Tween, TweeningType};
 
-use crate::global_types::{AppState, Chipper, DespawnWithLevel, Trunk};
+use crate::global_types::{AppState, Chipper, DespawnWithLevel, ParticleEffectType, Trunk};
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
-use crate::loading::{ModelAssets, ParticleEffectsAssets};
+use crate::loading::ModelAssets;
 
 pub struct ChippersPlugin;
 
@@ -89,7 +89,6 @@ enum ChipperEffect {
 
 fn set_chipper_effect(
     mut commands: Commands,
-    particle_effects_assets: Res<ParticleEffectsAssets>,
     trunks_query: Query<&Trunk>,
     mut chippers_query: Query<(Entity, &Chipper, &mut ChipperEffect)>,
 ) {
@@ -123,12 +122,10 @@ fn set_chipper_effect(
                 cmd.remove::<ParticleEffect>();
             }
             ChipperEffect::ChippingWood => {
-                cmd.insert(ParticleEffect::new(
-                    particle_effects_assets.chipping_wood.clone(),
-                ));
+                cmd.insert(ParticleEffectType::ChippingWood);
             }
             ChipperEffect::Smoking => {
-                cmd.insert(ParticleEffect::new(particle_effects_assets.smoke.clone()));
+                cmd.insert(ParticleEffectType::Smoke);
             }
         }
     }

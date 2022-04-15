@@ -7,7 +7,6 @@ use ezinput_macros::BindingTypeView;
 #[derive(Clone, Hash, Debug, PartialEq, Eq)]
 pub enum AppState {
     Menu(MenuState),
-    ClearParticleEffects,
     ClearLevelAndThenLoad,
     LoadLevel,
     Game,
@@ -63,4 +62,11 @@ pub struct SpawnsWoodchips(pub Timer);
 pub enum Woodchip {
     Free,
     StuckInChipper(Entity),
+}
+
+#[derive(Component, Copy, Clone, PartialEq, Debug)]
+pub enum ParticleEffectType {
+    ChippingWood,
+    Smoke,
+    Blood,
 }

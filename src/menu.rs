@@ -37,7 +37,6 @@ fn pause_unpause_game(
             AppState::Menu(_) => {
                 unpause_writer.send(UnpauseEvent);
             }
-            AppState::ClearParticleEffects => {}
             AppState::ClearLevelAndThenLoad => {}
             AppState::LoadLevel => {}
             AppState::Game => {
@@ -70,7 +69,7 @@ fn main_menu(
             .kbgp_initial_focus()
             .clicked()
         {
-            state.set(AppState::ClearParticleEffects).unwrap();
+            state.set(AppState::ClearLevelAndThenLoad).unwrap();
         }
         #[cfg(not(target_arch = "wasm32"))]
         if ui.button("Exit").kbgp_navigation().clicked() {
