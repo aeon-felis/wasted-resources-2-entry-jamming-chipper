@@ -27,15 +27,21 @@ impl Plugin for TrunksPlugin {
 fn spawn_trunk(
     mut commands: Commands,
     model_assets: Res<ModelAssets>,
-    current_logs: Query<(), With<Trunk>>,
+    current_logs: Query<&Trunk>,
 ) {
-    if current_logs.iter().next().is_some() {
+    let mut num_trunks = 0;
+    for trunk in current_logs.iter() {
+        if matches!(trunk, Trunk::Free) {
+            return;
+        }
+        num_trunks += 1;
+    }
+    if 2 <= num_trunks {
         return;
     }
     let mut cmd = commands.spawn();
     cmd.insert_bundle(RigidBodyBundle {
         body_type: RigidBodyType::Dynamic.into(),
-        // body_type: RigidBodyType::KinematicVelocityBased.into(),
         mass_properties: RigidBodyMassProps {
             local_mprops: MassProperties {
                 local_com: point![0.0, 0.0],
@@ -47,15 +53,14 @@ fn spawn_trunk(
         .into(),
         position: point![10.0, 5.0].into(),
         velocity: RigidBodyVelocity {
-            linvel: vector![-6.0, 3.0],
-            angvel: -0.5,
+            linvel: {
+                let x_velovity = -15.0 + 10.0 * rand::random::<f32>();
+                let y_velovity = 2.0 + 4.0 * rand::random::<f32>();
+                vector![x_velovity, y_velovity]
+            },
+            angvel: 4.0 * (rand::random::<f32>() - 0.5),
         }
         .into(),
-        // damping: RigidBodyDamping {
-        // linear_damping: 1.0,
-        // angular_damping: 0.0,
-        // }
-        // .into(),
         ..Default::default()
     });
     cmd.insert(RigidBodyPositionSync::Discrete);

@@ -7,7 +7,7 @@ use bevy_tweening::{Animator, AnimatorState, EaseFunction, Lens, Tween, Tweening
 use ezinput::prelude::*;
 
 use crate::global_types::{
-    AppState, Chipper, DespawnWithLevel, InputBinding, ParticleEffectType, PlayerControl,
+    AppState, Chipper, DespawnWithLevel, InputBinding, MenuState, ParticleEffectType, PlayerControl,
 };
 use crate::gltf_spawner::{GltfNodeAddedEvent, SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
@@ -24,6 +24,7 @@ impl Plugin for PlayerPlugin {
                 .with_system(add_animation)
                 .with_system(player_animation)
                 .with_system(kill_player)
+                .with_system(game_over_when_player_falls_too_much)
         });
     }
 }
@@ -52,7 +53,7 @@ fn setup_player(mut commands: Commands, model_assets: Res<ModelAssets>) {
             ..Default::default()
         }
         .into(),
-        position: point![-3.0, 6.0].into(),
+        position: point![-3.0, 12.0].into(),
         // damping: RigidBodyDamping {
         // linear_damping: 1.0,
         // angular_damping: 0.0,
@@ -174,6 +175,7 @@ fn player_control(
         Entity,
         &mut RigidBodyVelocityComponent,
         &RigidBodyMassPropsComponent,
+        &IsPlayerAlive,
         &mut PlayerControl,
         &mut PlayerStatusForAnimation,
     )>,
@@ -206,10 +208,14 @@ fn player_control(
         player_entity,
         mut velocity,
         mass_props,
+        is_player_alive,
         mut player_control,
         mut player_status_for_animation,
     ) in query.iter_mut()
     {
+        if !is_player_alive.0 {
+            continue;
+        }
         let standing_on = narrow_phase
             .contacts_with(player_entity.handle())
             .filter(|contact| contact.has_any_active_contact)
@@ -397,7 +403,11 @@ struct IsPlayerAlive(bool);
 fn kill_player(
     mut commands: Commands,
     mut reader: EventReader<IntersectionEvent>,
-    mut players_query: Query<&mut IsPlayerAlive>,
+    mut players_query: Query<(
+        &mut IsPlayerAlive,
+        &mut RigidBodyDominanceComponent,
+        &mut RigidBodyVelocityComponent,
+    )>,
     chippers_query: Query<&Chipper>,
 ) {
     for event in reader.iter() {
@@ -409,13 +419,28 @@ fn kill_player(
                 players_query,
                 chippers_query,
         ); continue);
-        let mut is_player_alive = ok_or!(players_query.get_mut(player_entity); continue);
+        let (mut is_player_alive, mut player_dominance, mut player_velocity) =
+            ok_or!(players_query.get_mut(player_entity); continue);
         if !is_player_alive.0 {
             continue;
         }
         is_player_alive.0 = false;
+        player_dominance.0 = RigidBodyDominance(127);
+        player_velocity.0.linvel = vector![0.0, 5.0];
+        player_velocity.0.angvel = 10.0;
         commands
             .entity(player_entity)
             .insert(ParticleEffectType::Blood);
+    }
+}
+
+fn game_over_when_player_falls_too_much(
+    players_query: Query<&RigidBodyPositionComponent, With<IsPlayerAlive>>,
+    mut state: ResMut<State<AppState>>,
+) {
+    for player_position in players_query.iter() {
+        if player_position.position.translation.y < -4.0 {
+            state.set(AppState::Menu(MenuState::GameOver)).unwrap();
+        }
     }
 }

@@ -18,6 +18,7 @@ pub enum AppState {
 pub enum MenuState {
     Main,
     Pause,
+    GameOver,
 }
 
 #[derive(Component)]

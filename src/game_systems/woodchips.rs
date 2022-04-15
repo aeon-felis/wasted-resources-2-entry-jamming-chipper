@@ -67,8 +67,8 @@ fn spawn_woodchips(
                     .into(),
                     velocity: RigidBodyVelocity {
                         linvel: {
-                            let y_velovity = 5.0 + 7.0 * rand::random::<f32>();
                             let x_velovity = 3.0 + 2.0 * rand::random::<f32>();
+                            let y_velovity = 5.0 + 7.0 * rand::random::<f32>();
                             vector![x_velovity * spawn_direction.x, y_velovity]
                         },
                         angvel: 10.0 * (rand::random::<f32>() - 0.5),
