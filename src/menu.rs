@@ -78,6 +78,35 @@ fn main_menu(
         if ui.button("Exit").kbgp_navigation().clicked() {
             exit.send(bevy::app::AppExit);
         }
+        ui.add_space(5.0);
+        ui.colored_label(
+            egui::Color32::DARK_GRAY,
+            r#"
+            Your wood chipper cannot handle wood chips.
+            They jam it.
+            It had one job.
+            Now you have to do that job.
+            "#,
+        );
+        ui.add_space(10.0);
+        ui.colored_label(
+            egui::Color32::YELLOW,
+            r#"
+            Use Left/Right keys, A/D, or gamepad to move left and right.
+            Use Up key, W, or gamepad south button to jump.
+            Jump on the wood chips to clear them.
+            "#,
+        );
+        ui.label(
+            egui::RichText::new(
+                r#"
+            DON'T GET CHIPPED!
+            "#,
+            )
+            .strong()
+            .color(egui::Color32::RED)
+            .text_style(egui::TextStyle::Heading),
+        );
     });
 }
 
