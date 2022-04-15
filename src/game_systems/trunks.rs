@@ -3,7 +3,9 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use crate::global_types::{AppState, Chipper, DespawnWithLevel, SpawnsWoodchips, Trunk};
+use crate::global_types::{
+    AppState, Chipper, DespawnWithLevel, ScoreStatus, SpawnsWoodchips, Trunk,
+};
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
 use crate::utils::{entities_ordered_by_type, ok_or, some_or};
@@ -82,6 +84,7 @@ fn handle_trunk_hitting_chipper(
     mut trunks_query: Query<(&mut Trunk, &mut RigidBodyTypeComponent)>,
     chippers_query: Query<&Chipper>,
     mut commands: Commands,
+    mut score_status: ResMut<ScoreStatus>,
 ) {
     for event in reader.iter() {
         let [trunk_entity, chipper_entity] = some_or!(entities_ordered_by_type!(
@@ -108,6 +111,7 @@ fn handle_trunk_hitting_chipper(
             if trunk_chippers.contains(&chipper_entity) {
                 trunk_chippers.remove(&chipper_entity);
                 if trunk_chippers.is_empty() {
+                    score_status.logs_chipped += 1;
                     commands.entity(trunk_entity).despawn_recursive();
                 }
             }

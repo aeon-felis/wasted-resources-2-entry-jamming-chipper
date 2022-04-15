@@ -10,7 +10,7 @@ mod woodchips;
 use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::*;
 
-use crate::global_types::{AppState, DespawnWithLevel};
+use crate::global_types::{AppState, DespawnWithLevel, ScoreStatus};
 
 pub struct GameSystemsPlugin;
 
@@ -32,6 +32,7 @@ impl Plugin for GameSystemsPlugin {
         app.add_plugin(particle_effects::ParticleEffectPlugin);
         app.add_system_set({
             SystemSet::on_enter(AppState::ClearLevelAndThenLoad)
+                .with_system(reset_score)
                 .with_system(clear_and_load)
                 .with_system(create_move_to_state_system(AppState::LoadLevel))
         });
@@ -41,6 +42,10 @@ impl Plugin for GameSystemsPlugin {
         });
         app.add_system(enable_disable_physics.with_run_criteria(run_on_state_change));
     }
+}
+
+fn reset_score(mut score_status: ResMut<ScoreStatus>) {
+    *score_status = Default::default();
 }
 
 fn clear_and_load(

@@ -5,7 +5,7 @@ use bevy_rapier2d::prelude::*;
 use bevy_tweening::{Animator, AnimatorState};
 
 use crate::global_types::{
-    AppState, Chipper, DespawnWithLevel, PlayerControl, SpawnsWoodchips, Woodchip,
+    AppState, Chipper, DespawnWithLevel, PlayerControl, ScoreStatus, SpawnsWoodchips, Woodchip,
 };
 use crate::gltf_spawner::{SpawnCollider, SpawnGltfNode};
 use crate::loading::ModelAssets;
@@ -160,6 +160,7 @@ fn handle_player_jump_from_chipper(
     mut chippers_query: Query<(&mut Chipper, &Children)>,
     mut saws_query: Query<&mut Animator<Transform>>,
     mut commands: Commands,
+    mut score_status: ResMut<ScoreStatus>,
 ) {
     for event in reader.iter() {
         if let ContactEvent::Started(handle1, handle2) = event {
@@ -197,6 +198,7 @@ fn handle_player_jump_from_chipper(
                     }
                 }
 
+                score_status.woodchips_cleared += 1;
                 commands.entity(woodchip_entity).despawn_recursive();
             }
         }

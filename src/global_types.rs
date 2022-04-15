@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 use bevy::utils::HashSet;
 use bevy_rapier2d::na::Vector2;
@@ -69,4 +71,20 @@ pub enum ParticleEffectType {
     ChippingWood,
     Smoke,
     Blood,
+}
+
+#[derive(Default)]
+pub struct ScoreStatus {
+    pub time: Duration,
+    pub logs_chipped: u32,
+    pub woodchips_cleared: u32,
+}
+
+impl ScoreStatus {
+    pub fn format_time(&self) -> String {
+        let time_in_seconds = self.time.as_secs_f32();
+        let only_minutes = time_in_seconds as u32 / 60;
+        let only_seconds = time_in_seconds % 60.0;
+        format!("{:02}:{:04.1}", only_minutes, only_seconds)
+    }
 }

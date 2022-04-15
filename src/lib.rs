@@ -3,6 +3,7 @@ pub mod global_types;
 pub mod gltf_spawner;
 mod loading;
 mod menu;
+mod score_display;
 mod utils;
 
 use bevy::app::App;
@@ -15,6 +16,7 @@ use self::global_types::{AppState, MenuState};
 use self::gltf_spawner::GltfSpawnerPlugin;
 use self::loading::LoadingPlugin;
 use self::menu::MenuPlugin;
+use self::score_display::ScoreDisplayPlugin;
 
 pub struct GamePlugin;
 
@@ -26,10 +28,19 @@ impl Plugin for GamePlugin {
         app.add_plugin(MenuPlugin);
         app.add_plugin(GameSystemsPlugin);
 
+        app.add_startup_system(|mut commands: Commands| {
+            commands.spawn_bundle(UiCameraBundle::default());
+        });
+        app.add_plugin(ScoreDisplayPlugin);
+
         #[cfg(debug_assertions)]
         {
             app.add_plugin(FrameTimeDiagnosticsPlugin::default());
             app.add_plugin(LogDiagnosticsPlugin::default());
         }
+    }
+
+    fn name(&self) -> &str {
+        std::any::type_name::<Self>()
     }
 }
