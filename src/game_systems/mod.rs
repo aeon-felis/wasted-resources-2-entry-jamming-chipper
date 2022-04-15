@@ -8,20 +8,48 @@ mod woodchips;
 
 use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::*;
-use bevy_hanabi::{EffectAsset, ParticleEffect};
+use bevy_hanabi::ParticleEffect;
 
 use crate::global_types::{AppState, DespawnWithLevel};
 
 pub struct GameSystemsPlugin;
 
-fn create_move_to_state_system(new_state: AppState) -> impl Fn(ResMut<State<AppState>>) {
-    move |mut state: ResMut<State<AppState>>| {
-        state.set(new_state.clone()).unwrap();
+struct MoveToStateIn {
+    in_frames: usize,
+    target_state: Option<AppState>,
+}
+
+fn apply_move_to_state_in(
+    mut move_to_state_in: ResMut<MoveToStateIn>,
+    mut state: ResMut<State<AppState>>,
+) {
+    if move_to_state_in.in_frames == 0 {
+        return;
+    }
+    move_to_state_in.in_frames -= 1;
+    if move_to_state_in.in_frames == 0 {
+        if let Some(new_state) = move_to_state_in.target_state.take() {
+            state.set(new_state).unwrap();
+        }
+    }
+}
+
+fn create_move_to_state_system(new_state: AppState) -> impl Fn(ResMut<MoveToStateIn>) {
+    move |mut move_to_state_in| {
+        *move_to_state_in = MoveToStateIn {
+            in_frames: 1,
+            target_state: Some(new_state.clone()),
+        }
     }
 }
 
 impl Plugin for GameSystemsPlugin {
     fn build(&self, app: &mut App) {
+        app.insert_resource(MoveToStateIn {
+            in_frames: 0,
+            target_state: None,
+        });
+        app.add_system(apply_move_to_state_in);
         app.add_plugin(camera::CameraPlugin);
         app.add_plugin(input::InputPlugin);
         app.add_plugin(arena::ArenaPlugin);
@@ -47,18 +75,11 @@ impl Plugin for GameSystemsPlugin {
     }
 }
 
-fn clear_particle_effects(
-    mut particle_effects_query: Query<&mut ParticleEffect>,
-    mut particle_effects_assets: ResMut<Assets<EffectAsset>>,
-) {
+fn clear_particle_effects(mut particle_effects_query: Query<&mut ParticleEffect>) {
     for mut particle_effect in particle_effects_query.iter_mut() {
         if let Some(spawner) = particle_effect.maybe_spawner() {
-            spawner.reset();
             spawner.set_active(false);
         }
-    }
-    for (_, effect_asset) in particle_effects_assets.iter_mut() {
-        effect_asset.spawner.reset();
     }
 }
 
