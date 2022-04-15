@@ -1,6 +1,6 @@
 [package]
 name = "jamming_chipper"
-version = "0.1.0"
+version = "0.1.1"
 publish = false
 authors = ["Idan Arye <idanarye@gmail.com>"]
 edition = "2021"
